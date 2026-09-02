@@ -10,7 +10,7 @@ export default function Home() {
 
           {/* Logo */}
           <Link href="/" className="text-2xl font-bold tracking-tight">
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -274,11 +274,11 @@ export default function Home() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
 
           <div className="text-xl font-bold">
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </div>
 
           <p className="text-sm text-gray-500">
-            © 2026 Crevo. All rights reserved.
+            © 2026 YOUTENT. All rights reserved.
           </p>
 
         </div>

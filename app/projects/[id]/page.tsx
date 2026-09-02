@@ -109,7 +109,7 @@ export default async function ProjectPage({ params }: Props) {
             href="/dashboard"
             className="text-2xl font-extrabold tracking-tight text-gray-900"
           >
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </Link>
 
           <Link

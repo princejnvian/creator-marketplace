@@ -34,7 +34,7 @@ export default async function CreatorsPage() {
             href="/dashboard"
             className="text-2xl font-extrabold tracking-tight"
           >
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </Link>
 
           <div className="flex items-center gap-3">
@@ -65,7 +65,7 @@ export default async function CreatorsPage() {
         <div className="mb-10">
 
           <p className="text-sm font-bold uppercase tracking-wide text-blue-600">
-            Crevo Marketplace
+            YOUTENT Marketplace
           </p>
 
           <h1 className="mt-2 text-4xl font-extrabold tracking-tight">
@@ -228,7 +228,7 @@ export default async function CreatorsPage() {
 
             <p className="mx-auto mt-2 max-w-md text-gray-500">
               There are no freelancers available yet.
-              Become one and offer your creative services on Crevo.
+              Become one and offer your creative services on YOUTENT.
             </p>
 
             <Link

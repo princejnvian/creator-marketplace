@@ -46,7 +46,7 @@ export default async function CreatorProfilePage({
             href="/dashboard"
             className="text-2xl font-extrabold tracking-tight"
           >
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </Link>
 
           <div className="flex items-center gap-3">

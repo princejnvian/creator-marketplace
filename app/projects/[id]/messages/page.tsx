@@ -158,7 +158,7 @@ export default async function MessagesPage({ params }: Props) {
             href="/dashboard"
             className="text-2xl font-extrabold tracking-tight"
           >
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </Link>
 
           <Link

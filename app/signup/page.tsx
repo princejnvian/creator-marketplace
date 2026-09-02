@@ -85,7 +85,7 @@ export default function SignupPage() {
             href="/"
             className="text-2xl font-extrabold tracking-tight"
           >
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </Link>
 
           <p className="text-sm text-gray-600">
@@ -117,7 +117,7 @@ export default function SignupPage() {
                   href="/"
                   className="text-3xl font-extrabold"
                 >
-                  Crevo<span className="text-blue-200">.</span>
+                  YOUTENT<span className="text-blue-200">.</span>
                 </Link>
 
                 <h1 className="mt-16 text-4xl font-extrabold leading-tight">
@@ -129,7 +129,7 @@ export default function SignupPage() {
                 </h1>
 
                 <p className="mt-6 max-w-sm leading-7 text-blue-100">
-                  Join Crevo and connect with talented creators
+                  Join YOUTENT and connect with talented creators
                   and clients from one simple platform.
                 </p>
 
@@ -170,7 +170,7 @@ export default function SignupPage() {
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-gray-500">
-                  Join Crevo and start creating opportunities.
+                  Join YOUTENT and start creating opportunities.
                 </p>
 
                 {/* Account Type */}
@@ -381,7 +381,7 @@ export default function SignupPage() {
                     />
 
                     <span className="text-xs leading-5 text-gray-500">
-                      I agree to Crevo&apos;s{" "}
+                      I agree to YOUTENT&apos;s{" "}
                       <a
                         href="#"
                         className="font-medium text-blue-600 hover:underline"

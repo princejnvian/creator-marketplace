@@ -82,7 +82,7 @@ export default async function DashboardPage() {
             href="/dashboard"
             className="text-2xl font-extrabold tracking-tight"
           >
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </Link>
 
           {/* Navigation */}
@@ -143,7 +143,7 @@ export default async function DashboardPage() {
           </h1>
 
           <p className="mt-3 text-gray-600">
-            Manage your Crevo account and discover new opportunities.
+            Manage your YOUTENT account and discover new opportunities.
           </p>
 
         </div>
@@ -450,7 +450,7 @@ export default async function DashboardPage() {
 
                 <p className="mt-2 leading-7 text-gray-600">
                   {profile?.bio ||
-                    "You haven't added a bio yet. Tell the Crevo community about yourself."}
+                    "You haven't added a bio yet. Tell the YOUTENT community about yourself."}
                 </p>
 
               </div>
@@ -594,7 +594,7 @@ export default async function DashboardPage() {
 
             <p className="mt-2 max-w-2xl text-gray-600">
               Add your name, username, bio and skills to make your
-              Crevo profile ready.
+              YOUTENT profile ready.
             </p>
 
             <Link

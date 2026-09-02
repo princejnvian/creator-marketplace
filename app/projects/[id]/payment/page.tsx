@@ -107,7 +107,7 @@ export default async function PaymentPage({ params }: Props) {
               href="/dashboard"
               className="text-2xl font-extrabold tracking-tight text-gray-900"
             >
-              Crevo<span className="text-blue-600">.</span>
+              YOUTENT<span className="text-blue-600">.</span>
             </Link>
 
             <Link
@@ -177,7 +177,7 @@ export default async function PaymentPage({ params }: Props) {
               href="/dashboard"
               className="text-2xl font-extrabold tracking-tight text-gray-900"
             >
-              Crevo<span className="text-blue-600">.</span>
+              YOUTENT<span className="text-blue-600">.</span>
             </Link>
 
             <Link
@@ -242,7 +242,7 @@ export default async function PaymentPage({ params }: Props) {
             href="/dashboard"
             className="text-2xl font-extrabold tracking-tight text-gray-900"
           >
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </Link>
 
           <Link
@@ -333,7 +333,7 @@ export default async function PaymentPage({ params }: Props) {
           />
 
           <p className="mt-4 text-center text-xs text-gray-500">
-            Your payment will be verified securely by Crevo before it is
+            Your payment will be verified securely by YOUTENT before it is
             marked as paid.
           </p>
         </div>

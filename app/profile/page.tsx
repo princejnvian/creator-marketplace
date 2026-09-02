@@ -312,7 +312,7 @@ export default function ProfilePage() {
             href="/dashboard"
             className="text-2xl font-extrabold tracking-tight"
           >
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </Link>
 
           <Link
@@ -342,7 +342,7 @@ export default function ProfilePage() {
             </h1>
 
             <p className="mt-3 max-w-2xl text-gray-600">
-              Tell the Crevo community a little about yourself.
+              Tell the YOUTENT community a little about yourself.
               Your profile helps clients and creators know who they
               are working with.
             </p>

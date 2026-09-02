@@ -184,7 +184,7 @@ export default function PaymentButton({
 
         currency: data.currency || "INR",
 
-        name: "Crevo",
+        name: "YOUTENT",
 
         description: projectTitle,
 
@@ -260,7 +260,7 @@ export default function PaymentButton({
               await verifyResponse.json();
 
             console.log(
-              "Crevo verification response:",
+              "YOUTENT verification response:",
               verifyData
             );
 
@@ -276,7 +276,7 @@ export default function PaymentButton({
             // --------------------------------
 
             alert(
-              "Payment successful and verified by Crevo! ✅"
+              "Payment successful and verified by YOUTENT! ✅"
             );
 
             // --------------------------------

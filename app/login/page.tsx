@@ -53,7 +53,7 @@ export default function LoginPage() {
             href="/"
             className="text-2xl font-extrabold tracking-tight"
           >
-            Crevo<span className="text-blue-600">.</span>
+            YOUTENT<span className="text-blue-600">.</span>
           </Link>
 
           <p className="text-sm text-gray-600">
@@ -83,7 +83,7 @@ export default function LoginPage() {
                 href="/"
                 className="text-3xl font-extrabold"
               >
-                Crevo<span className="text-blue-200">.</span>
+                YOUTENT<span className="text-blue-200">.</span>
               </Link>
 
               <div className="mt-28">
@@ -116,7 +116,7 @@ export default function LoginPage() {
               </p>
 
               <p className="mt-2 text-sm leading-6 text-blue-100">
-                Hire creators or offer your own creative services on Crevo.
+                Hire creators or offer your own creative services on YOUTENT.
               </p>
 
             </div>
@@ -137,7 +137,7 @@ export default function LoginPage() {
               </h2>
 
               <p className="mt-2 text-sm text-gray-500">
-                Enter your details to continue to Crevo.
+                Enter your details to continue to YOUTENT.
               </p>
 
               {/* Login Form */}
