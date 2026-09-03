@@ -75,68 +75,98 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+      {/* Background */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-violet-500/10 blur-3xl" />
+      </div>
 
       {/* Navbar */}
-      <nav className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-
+      <nav className="relative z-20 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
+          {/* Logo */}
           <Link
             href="/"
-            className="text-2xl font-extrabold tracking-tight"
+            className="group flex items-center gap-2"
           >
-            YOUTENT<span className="text-blue-600">.</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105">
+              Y
+            </div>
+
+            <div className="text-xl font-black tracking-tight">
+              YOUTENT<span className="text-blue-600">.</span>
+            </div>
           </Link>
 
-          <p className="text-sm text-gray-600">
-            Already have an account?{" "}
+          {/* Login */}
+          <p className="text-sm text-slate-500">
+            <span className="hidden sm:inline">
+              Already have an account?{" "}
+            </span>
+
             <Link
               href="/login"
-              className="font-semibold text-blue-600 hover:text-blue-700"
+              className="font-bold text-blue-600 transition hover:text-blue-700"
             >
               Log in
             </Link>
           </p>
-
         </div>
       </nav>
 
       {/* Main */}
-      <section className="px-6 py-12 md:py-16">
-
+      <section className="relative z-10 px-5 py-8 sm:px-6 sm:py-12 lg:py-14">
         <div className="mx-auto max-w-5xl">
+          <div className="grid overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-2xl shadow-slate-900/10 md:grid-cols-2">
 
-          <div className="grid overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl md:grid-cols-2">
+            {/* Left Panel */}
+            <div className="relative hidden overflow-hidden bg-gradient-to-br from-blue-700 via-indigo-700 to-violet-700 p-10 text-white md:flex md:min-h-[760px] md:flex-col md:justify-between lg:p-12">
 
-            {/* Left Side */}
-            <div className="hidden bg-blue-600 p-10 text-white md:flex md:flex-col md:justify-between">
+              {/* Decorative circles */}
+              <div className="absolute -right-28 -top-28 h-80 w-80 rounded-full border border-white/10 bg-white/5" />
+              <div className="absolute -bottom-32 -left-28 h-80 w-80 rounded-full border border-white/10 bg-white/5" />
+              <div className="absolute right-16 top-1/2 h-24 w-24 rounded-full border border-white/10 bg-white/5" />
 
-              <div>
-
+              {/* Top */}
+              <div className="relative">
                 <Link
                   href="/"
-                  className="text-3xl font-extrabold"
+                  className="group inline-flex items-center gap-2"
                 >
-                  YOUTENT<span className="text-blue-200">.</span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-sm font-black text-white backdrop-blur-sm transition group-hover:bg-white/20">
+                    Y
+                  </div>
+
+                  <span className="text-2xl font-black tracking-tight">
+                    YOUTENT<span className="text-blue-200">.</span>
+                  </span>
                 </Link>
 
-                <h1 className="mt-16 text-4xl font-extrabold leading-tight">
-                  Build.
-                  <br />
-                  Create.
-                  <br />
-                  Grow.
-                </h1>
+                {/* Hero */}
+                <div className="mt-20">
+                  <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-blue-100 backdrop-blur-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-300" />
+                    Join YOUTENT
+                  </div>
 
-                <p className="mt-6 max-w-sm leading-7 text-blue-100">
-                  Join YOUTENT and connect with talented creators
-                  and clients from one simple platform.
-                </p>
+                  <h1 className="text-4xl font-black leading-[1.08] tracking-tight lg:text-5xl">
+                    Build.
+                    <br />
+                    Create.
+                    <br />
+                    <span className="text-blue-200">Grow.</span>
+                  </h1>
 
+                  <p className="mt-6 max-w-sm text-base leading-7 text-blue-100 lg:text-lg">
+                    Join a growing creative community and turn skills,
+                    ideas, and opportunities into meaningful projects.
+                  </p>
+                </div>
               </div>
 
-              <div className="space-y-5">
-
+              {/* Benefits */}
+              <div className="relative space-y-5">
                 <Benefit
                   title="Find opportunities"
                   description="Connect with creators and clients."
@@ -144,61 +174,83 @@ export default function SignupPage() {
 
                 <Benefit
                   title="Showcase your skills"
-                  description="Build your professional portfolio."
+                  description="Build your professional presence."
                 />
 
                 <Benefit
                   title="Grow your career"
-                  description="Turn your creative skills into income."
+                  description="Turn your creative skills into opportunities."
                 />
-
               </div>
-
             </div>
 
-            {/* Right Side */}
-            <div className="p-7 sm:p-10">
-
+            {/* Right Panel */}
+            <div className="p-7 sm:p-10 lg:p-12">
               <div className="mx-auto max-w-md">
 
-                <p className="text-sm font-bold uppercase tracking-wide text-blue-600">
-                  Get started
-                </p>
+                {/* Heading */}
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-blue-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                    Get started
+                  </div>
 
-                <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
-                  Create your account
-                </h2>
+                  <h2 className="mt-5 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+                    Create your account
+                  </h2>
 
-                <p className="mt-2 text-sm leading-6 text-gray-500">
-                  Join YOUTENT and start creating opportunities.
-                </p>
+                  <p className="mt-3 text-sm leading-6 text-slate-500">
+                    Join YOUTENT and start creating opportunities.
+                  </p>
+                </div>
 
                 {/* Account Type */}
                 <div className="mt-7">
-
-                  <label className="text-sm font-semibold">
+                  <label className="text-sm font-bold text-slate-800">
                     I want to
                   </label>
 
                   <div className="mt-3 grid grid-cols-2 gap-3">
-
                     {/* Client */}
                     <button
                       type="button"
                       onClick={() => setAccountType("client")}
-                      className={`rounded-xl border p-4 text-left transition ${
+                      className={`group relative overflow-hidden rounded-2xl border p-4 text-left transition duration-200 ${
                         accountType === "client"
-                          ? "border-blue-600 bg-blue-50 ring-2 ring-blue-100"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-blue-500 bg-blue-50/70 shadow-sm ring-4 ring-blue-500/10"
+                          : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                       }`}
                     >
-                      <div className="text-2xl">👤</div>
+                      {accountType === "client" && (
+                        <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-black text-white">
+                          ✓
+                        </div>
+                      )}
 
-                      <p className="mt-2 text-sm font-bold">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg ${
+                          accountType === "client"
+                            ? "bg-blue-600 text-white"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        >
+                          <path d="M20 21a8 8 0 0 0-16 0" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                      </div>
+
+                      <p className="mt-3 text-sm font-bold text-slate-900">
                         Hire creators
                       </p>
 
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
                         I need creative services.
                       </p>
                     </button>
@@ -207,25 +259,46 @@ export default function SignupPage() {
                     <button
                       type="button"
                       onClick={() => setAccountType("freelancer")}
-                      className={`rounded-xl border p-4 text-left transition ${
+                      className={`group relative overflow-hidden rounded-2xl border p-4 text-left transition duration-200 ${
                         accountType === "freelancer"
-                          ? "border-blue-600 bg-blue-50 ring-2 ring-blue-100"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-blue-500 bg-blue-50/70 shadow-sm ring-4 ring-blue-500/10"
+                          : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                       }`}
                     >
-                      <div className="text-2xl">🎨</div>
+                      {accountType === "freelancer" && (
+                        <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-black text-white">
+                          ✓
+                        </div>
+                      )}
 
-                      <p className="mt-2 text-sm font-bold">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg ${
+                          accountType === "freelancer"
+                            ? "bg-blue-600 text-white"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        >
+                          <path d="M12 3v18" />
+                          <path d="M17 8c0-2-2.2-3-5-3s-5 1-5 3 2.2 3 5 3 5 1 5 3-2.2 3-5 3-5-1-5-3" />
+                        </svg>
+                      </div>
+
+                      <p className="mt-3 text-sm font-bold text-slate-900">
                         Offer services
                       </p>
 
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
                         I want to sell my skills.
                       </p>
                     </button>
-
                   </div>
-
                 </div>
 
                 {/* Form */}
@@ -233,64 +306,112 @@ export default function SignupPage() {
                   onSubmit={handleSignup}
                   className="mt-6 space-y-5"
                 >
-
                   {/* Full Name */}
                   <div>
-
                     <label
                       htmlFor="fullName"
-                      className="mb-2 block text-sm font-semibold"
+                      className="mb-2 block text-sm font-bold text-slate-800"
                     >
                       Full Name
                     </label>
 
-                    <input
-                      id="fullName"
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Enter your full name"
-                      autoComplete="name"
-                      required
-                      className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-50"
-                    />
+                    <div className="relative">
+                      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        >
+                          <path d="M20 21a8 8 0 0 0-16 0" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                      </div>
 
+                      <input
+                        id="fullName"
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Enter your full name"
+                        autoComplete="name"
+                        required
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm text-slate-900 outline-none transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
                   </div>
 
                   {/* Email */}
                   <div>
-
                     <label
                       htmlFor="email"
-                      className="mb-2 block text-sm font-semibold"
+                      className="mb-2 block text-sm font-bold text-slate-800"
                     >
                       Email Address
                     </label>
 
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                      required
-                      className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-50"
-                    />
+                    <div className="relative">
+                      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        >
+                          <rect
+                            x="3"
+                            y="5"
+                            width="18"
+                            height="14"
+                            rx="2"
+                          />
+                          <path d="m3 7 9 6 9-6" />
+                        </svg>
+                      </div>
 
+                      <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        required
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm text-slate-900 outline-none transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
                   </div>
 
                   {/* Password */}
                   <div>
-
                     <label
                       htmlFor="password"
-                      className="mb-2 block text-sm font-semibold"
+                      className="mb-2 block text-sm font-bold text-slate-800"
                     >
                       Password
                     </label>
 
                     <div className="relative">
+                      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        >
+                          <rect
+                            x="4"
+                            y="10"
+                            width="16"
+                            height="10"
+                            rx="2"
+                          />
+                          <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                        </svg>
+                      </div>
 
                       <input
                         id="password"
@@ -301,38 +422,65 @@ export default function SignupPage() {
                         autoComplete="new-password"
                         required
                         minLength={8}
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 pr-16 text-sm outline-none transition placeholder:text-gray-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-50"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-20 text-sm text-slate-900 outline-none transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                       />
 
                       <button
                         type="button"
-                        onClick={() =>
-                          setShowPassword(!showPassword)
-                        }
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-500 hover:text-blue-600"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-lg px-1 text-xs font-bold text-slate-500 transition hover:text-blue-600"
                       >
                         {showPassword ? "Hide" : "Show"}
                       </button>
-
                     </div>
 
-                    <p className="mt-2 text-xs text-gray-500">
-                      Minimum 8 characters.
-                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <div
+                        className={`h-1 flex-1 rounded-full ${
+                          password.length === 0
+                            ? "bg-slate-200"
+                            : password.length < 8
+                              ? "bg-red-300"
+                              : password.length < 12
+                                ? "bg-yellow-300"
+                                : "bg-emerald-400"
+                        }`}
+                      />
 
+                      <p className="text-xs text-slate-400">
+                        Minimum 8 characters
+                      </p>
+                    </div>
                   </div>
 
                   {/* Confirm Password */}
                   <div>
-
                     <label
                       htmlFor="confirmPassword"
-                      className="mb-2 block text-sm font-semibold"
+                      className="mb-2 block text-sm font-bold text-slate-800"
                     >
                       Confirm Password
                     </label>
 
                     <div className="relative">
+                      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        >
+                          <rect
+                            x="4"
+                            y="10"
+                            width="16"
+                            height="10"
+                            rx="2"
+                          />
+                          <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                        </svg>
+                      </div>
 
                       <input
                         id="confirmPassword"
@@ -349,7 +497,7 @@ export default function SignupPage() {
                         autoComplete="new-password"
                         required
                         minLength={8}
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 pr-16 text-sm outline-none transition placeholder:text-gray-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-50"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-20 text-sm text-slate-900 outline-none transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                       />
 
                       <button
@@ -359,58 +507,76 @@ export default function SignupPage() {
                             !showConfirmPassword
                           )
                         }
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-500 hover:text-blue-600"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-lg px-1 text-xs font-bold text-slate-500 transition hover:text-blue-600"
                       >
                         {showConfirmPassword ? "Hide" : "Show"}
                       </button>
-
                     </div>
 
+                    {confirmPassword.length > 0 && (
+                      <p
+                        className={`mt-2 text-xs font-medium ${
+                          password === confirmPassword
+                            ? "text-emerald-600"
+                            : "text-red-500"
+                        }`}
+                      >
+                        {password === confirmPassword
+                          ? "Passwords match"
+                          : "Passwords do not match"}
+                      </p>
+                    )}
                   </div>
 
                   {/* Terms */}
                   <label className="flex cursor-pointer items-start gap-3">
-
                     <input
                       type="checkbox"
                       checked={agree}
                       onChange={(e) =>
                         setAgree(e.target.checked)
                       }
-                      className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
 
-                    <span className="text-xs leading-5 text-gray-500">
+                    <span className="text-xs leading-5 text-slate-500">
                       I agree to YOUTENT&apos;s{" "}
                       <a
                         href="#"
-                        className="font-medium text-blue-600 hover:underline"
+                        className="font-semibold text-blue-600 hover:underline"
                       >
                         Terms of Service
                       </a>{" "}
                       and{" "}
                       <a
                         href="#"
-                        className="font-medium text-blue-600 hover:underline"
+                        className="font-semibold text-blue-600 hover:underline"
                       >
                         Privacy Policy
                       </a>
                       .
                     </span>
-
                   </label>
 
                   {/* Error */}
                   {error && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                      {error}
+                    <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm text-red-700">
+                      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs font-black">
+                        !
+                      </div>
+
+                      <p className="leading-5">{error}</p>
                     </div>
                   )}
 
                   {/* Success */}
                   {success && (
-                    <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                      {success}
+                    <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3.5 text-sm text-emerald-700">
+                      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black">
+                        ✓
+                      </div>
+
+                      <p className="leading-5">{success}</p>
                     </div>
                   )}
 
@@ -418,39 +584,57 @@ export default function SignupPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full rounded-xl bg-blue-600 px-5 py-3.5 font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-5 py-3.5 font-bold text-white shadow-lg shadow-blue-600/20 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/25 focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                   >
-                    {loading
-                      ? "Creating account..."
-                      : "Create Account"}
-                  </button>
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      {loading ? (
+                        <>
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Creating account...
+                        </>
+                      ) : (
+                        <>
+                          Create Account
+                          <svg
+                            className="h-4 w-4 transition duration-300 group-hover:translate-x-1"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M5 12h14" />
+                            <path d="m13 6 6 6-6 6" />
+                          </svg>
+                        </>
+                      )}
+                    </span>
 
+                    <div className="absolute inset-0 -translate-x-full bg-white/10 transition duration-700 group-hover:translate-x-full" />
+                  </button>
                 </form>
 
                 {/* Login */}
-                <p className="mt-7 text-center text-sm text-gray-600">
-
+                <p className="mt-7 text-center text-sm text-slate-500">
                   Already have an account?{" "}
-
                   <Link
                     href="/login"
-                    className="font-semibold text-blue-600 hover:underline"
+                    className="font-bold text-blue-600 transition hover:text-blue-700 hover:underline"
                   >
                     Log in
                   </Link>
-
                 </p>
 
+                {/* Tagline */}
+                <div className="mt-8 border-t border-slate-100 pt-5 text-center">
+                  <p className="text-xs font-medium tracking-wide text-slate-400">
+                    Where Talent Meets Opportunity
+                  </p>
+                </div>
               </div>
-
             </div>
-
           </div>
-
         </div>
-
       </section>
-
     </main>
   );
 }
@@ -464,23 +648,17 @@ function Benefit({
 }) {
   return (
     <div className="flex items-start gap-3">
-
-      <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-bold">
+      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-black text-white backdrop-blur-sm">
         ✓
       </div>
 
       <div>
+        <p className="font-bold">{title}</p>
 
-        <p className="font-semibold">
-          {title}
-        </p>
-
-        <p className="mt-1 text-sm text-blue-100">
+        <p className="mt-1 text-sm leading-6 text-blue-100">
           {description}
         </p>
-
       </div>
-
     </div>
   );
 }

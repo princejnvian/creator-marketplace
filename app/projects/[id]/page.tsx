@@ -49,19 +49,23 @@ export default async function ProjectPage({ params }: Props) {
     project.freelancer_id !== user.id
   ) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 text-gray-900">
-        <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-2xl font-bold text-gray-900">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 text-slate-900">
+        <div className="w-full max-w-md rounded-3xl border border-red-100 bg-white p-8 text-center shadow-xl shadow-slate-200/50">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl">
+            🔒
+          </div>
+
+          <h1 className="mt-5 text-2xl font-black">
             Access Denied
           </h1>
 
-          <p className="mt-3 text-gray-600">
+          <p className="mt-3 text-sm leading-6 text-slate-500">
             You are not allowed to view this project.
           </p>
 
           <Link
             href="/dashboard"
-            className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700"
+            className="mt-7 inline-flex rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
           >
             Back to Dashboard
           </Link>
@@ -100,100 +104,164 @@ export default async function ProjectPage({ params }: Props) {
       ? "Cancelled"
       : project.status;
 
+  const statusClasses =
+    project.status === "active"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+      : project.status === "completed"
+      ? "bg-blue-50 text-blue-700 border-blue-100"
+      : project.status === "cancelled"
+      ? "bg-red-50 text-red-700 border-red-100"
+      : "bg-slate-50 text-slate-600 border-slate-200";
+
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+
+      {/* Decorative background */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute left-1/4 top-0 h-72 w-72 rounded-full bg-blue-200/20 blur-3xl" />
+        <div className="absolute right-0 top-1/3 h-80 w-80 rounded-full bg-violet-200/20 blur-3xl" />
+      </div>
+
       {/* Navbar */}
-      <nav className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
+
           <Link
             href="/dashboard"
-            className="text-2xl font-extrabold tracking-tight text-gray-900"
+            className="group flex items-center gap-2.5"
           >
-            YOUTENT<span className="text-blue-600">.</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105">
+              Y
+            </div>
+
+            <div className="text-xl font-black tracking-tight">
+              YOUTENT<span className="text-blue-600">.</span>
+            </div>
           </Link>
 
           <Link
             href="/dashboard"
-            className="text-sm font-semibold text-gray-600 hover:text-blue-600"
+            className="group inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 hover:shadow-md"
           >
-            ← Dashboard
+            <span className="transition-transform group-hover:-translate-x-0.5">
+              ←
+            </span>
+            Dashboard
           </Link>
         </div>
       </nav>
 
       {/* Main */}
-      <section className="mx-auto max-w-5xl px-6 py-12">
+      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-6 sm:py-14">
+
         {/* Header */}
         <div className="mb-8">
-          <p className="text-sm font-bold uppercase tracking-wide text-blue-600">
-            Project Workspace
-          </p>
 
-          <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-gray-900">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3.5 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-blue-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+              Project Workspace
+            </span>
+
+            <span
+              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-bold ${statusClasses}`}
+            >
+              <span className="text-[10px]">●</span>
+              {statusLabel}
+            </span>
+          </div>
+
+          <h1 className="mt-5 max-w-4xl text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">
             {project.title}
           </h1>
 
-          <p className="mt-3 text-gray-600">
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base">
             {isClient
-              ? "Manage your project with the freelancer."
-              : "Manage this project and work with your client."}
+              ? "Manage your project, communicate with your freelancer and track everything from one workspace."
+              : "Manage your project, communicate with your client and keep your work organized from one workspace."}
           </p>
         </div>
 
-        {/* Project Status */}
-        <div className="mb-6">
-          <span
-            className={`inline-flex rounded-full px-4 py-2 text-sm font-bold ${
-              project.status === "active"
-                ? "bg-green-100 text-green-700"
-                : project.status === "completed"
-                ? "bg-blue-100 text-blue-700"
-                : project.status === "cancelled"
-                ? "bg-red-100 text-red-700"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            ● {statusLabel}
-          </span>
-        </div>
+        {/* Main Workspace Card */}
+        <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-xl shadow-slate-200/40">
 
-        {/* Main Card */}
-        <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+          {/* Project overview */}
+          <div className="border-b border-slate-100 p-6 sm:p-8 lg:p-10">
 
-          {/* Project Description */}
-          <div className="border-b border-gray-200 p-8">
-            <h2 className="text-xl font-bold text-gray-900">
-              Project Description
-            </h2>
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
 
-            <p className="mt-4 whitespace-pre-wrap leading-7 text-gray-600">
-              {project.description}
-            </p>
+              <div className="max-w-3xl">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-600">
+                  Project Overview
+                </p>
+
+                <h2 className="mt-2 text-2xl font-black text-slate-950">
+                  Project Description
+                </h2>
+
+                <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-500 sm:text-base">
+                  {project.description}
+                </p>
+              </div>
+
+              <div className="shrink-0 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 lg:min-w-[180px]">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Your Role
+                </p>
+
+                <p className="mt-1 text-lg font-black text-slate-900">
+                  {isClient ? "Client" : "Freelancer"}
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  {isClient
+                    ? "Project owner"
+                    : "Project professional"}
+                </p>
+              </div>
+
+            </div>
           </div>
 
-          {/* Project Details */}
-          <div className="grid gap-6 p-8 sm:grid-cols-3">
+          {/* Details */}
+          <div className="grid gap-4 border-b border-slate-100 p-6 sm:grid-cols-3 sm:p-8">
 
             {/* Budget */}
-            <div className="rounded-2xl bg-gray-50 p-5">
-              <p className="text-sm text-gray-500">
-                Budget
-              </p>
+            <div className="group rounded-2xl border border-slate-100 bg-slate-50/70 p-5 transition duration-300 hover:-translate-y-1 hover:border-blue-100 hover:bg-blue-50/40 hover:shadow-lg hover:shadow-blue-100/30">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  Budget
+                </p>
 
-              <p className="mt-2 text-2xl font-bold text-gray-900">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-lg shadow-sm">
+                  ₹
+                </div>
+              </div>
+
+              <p className="mt-4 text-2xl font-black tracking-tight text-slate-950">
                 {project.budget !== null
                   ? `₹${Number(project.budget).toLocaleString("en-IN")}`
                   : "Not specified"}
               </p>
+
+              <p className="mt-1 text-xs text-slate-400">
+                Total project value
+              </p>
             </div>
 
             {/* Deadline */}
-            <div className="rounded-2xl bg-gray-50 p-5">
-              <p className="text-sm text-gray-500">
-                Deadline
-              </p>
+            <div className="group rounded-2xl border border-slate-100 bg-slate-50/70 p-5 transition duration-300 hover:-translate-y-1 hover:border-violet-100 hover:bg-violet-50/40 hover:shadow-lg hover:shadow-violet-100/30">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  Deadline
+                </p>
 
-              <p className="mt-2 text-lg font-bold text-gray-900">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-lg shadow-sm">
+                  📅
+                </div>
+              </div>
+
+              <p className="mt-4 text-xl font-black tracking-tight text-slate-950">
                 {project.deadline
                   ? new Date(project.deadline).toLocaleDateString(
                       "en-IN",
@@ -205,176 +273,249 @@ export default async function ProjectPage({ params }: Props) {
                     )
                   : "Not specified"}
               </p>
+
+              <p className="mt-1 text-xs text-slate-400">
+                Project deadline
+              </p>
             </div>
 
             {/* Role */}
-            <div className="rounded-2xl bg-gray-50 p-5">
-              <p className="text-sm text-gray-500">
-                Your Role
-              </p>
-
-              <p className="mt-2 text-lg font-bold text-gray-900">
-                {isClient ? "Client" : "Freelancer"}
-              </p>
-            </div>
-          </div>
-
-          {/* PAYMENT SECTION */}
-          <div className="border-t border-gray-200 p-8">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-
-              <div>
-                <p className="text-sm font-bold uppercase tracking-wide text-blue-600">
-                  Payment
+            <div className="group rounded-2xl border border-slate-100 bg-slate-50/70 p-5 transition duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:bg-emerald-50/40 hover:shadow-lg hover:shadow-emerald-100/30">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  Account Role
                 </p>
 
-                <h2 className="mt-1 text-2xl font-bold text-gray-900">
-                  Project Payment
-                </h2>
-
-                <p className="mt-2 text-gray-600">
-                  {project.budget !== null
-                    ? `Total project amount: ₹${Number(
-                        project.budget
-                      ).toLocaleString("en-IN")}`
-                    : "No project budget specified."}
-                </p>
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-lg shadow-sm">
+                  👤
+                </div>
               </div>
 
-              {/* CLIENT PAYMENT */}
-              {isClient && project.budget !== null && (
-                <div className="sm:text-right">
+              <p className="mt-4 text-xl font-black tracking-tight text-slate-950">
+                {isClient ? "Client" : "Freelancer"}
+              </p>
 
-                  {paymentStatus === "paid" ? (
-                    <div>
-                      <span className="inline-flex rounded-full bg-green-100 px-4 py-2 text-sm font-bold text-green-700">
-                        ✓ Payment Paid
-                      </span>
+              <p className="mt-1 text-xs text-slate-400">
+                Your role in this project
+              </p>
+            </div>
 
-                      {payment?.paid_at && (
-                        <p className="mt-2 text-xs text-gray-500">
-                          Paid on{" "}
-                          {new Date(
-                            payment.paid_at
-                          ).toLocaleDateString("en-IN")}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <Link
-                      href={`/projects/${project.id}/payment`}
-                      className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-7 py-3 font-semibold text-white transition hover:bg-blue-700"
-                    >
-                      Pay Now →
-                    </Link>
-                  )}
+          </div>
 
-                </div>
-              )}
+          {/* Payment */}
+          <div className="border-b border-slate-100 p-6 sm:p-8 lg:p-10">
 
-              {/* FREELANCER PAYMENT STATUS */}
-              {!isClient && (
-                <div className="sm:text-right">
+            <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white shadow-xl shadow-slate-300/30 sm:p-8">
 
-                  {paymentStatus === "paid" ? (
-                    <span className="inline-flex rounded-full bg-green-100 px-4 py-2 text-sm font-bold text-green-700">
-                      ✓ Client Paid
+              <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-lg">
+                      💳
                     </span>
-                  ) : (
-                    <span className="inline-flex rounded-full bg-yellow-100 px-4 py-2 text-sm font-bold text-yellow-700">
-                      Payment Pending
-                    </span>
-                  )}
 
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-300">
+                      Secure Payment
+                    </p>
+                  </div>
+
+                  <h2 className="mt-4 text-2xl font-black sm:text-3xl">
+                    Project Payment
+                  </h2>
+
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
+                    {project.budget !== null
+                      ? `Total project amount: ₹${Number(
+                          project.budget
+                        ).toLocaleString("en-IN")}`
+                      : "No project budget specified."}
+                  </p>
                 </div>
-              )}
+
+                {/* CLIENT */}
+                {isClient && project.budget !== null && (
+                  <div className="lg:text-right">
+
+                    {paymentStatus === "paid" ? (
+                      <div>
+                        <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-400/10 px-4 py-2.5 text-sm font-black text-emerald-300 ring-1 ring-emerald-400/20">
+                          <span>✓</span>
+                          Payment Paid
+                        </div>
+
+                        {payment?.paid_at && (
+                          <p className="mt-2 text-xs text-slate-400">
+                            Paid on{" "}
+                            {new Date(
+                              payment.paid_at
+                            ).toLocaleDateString("en-IN")}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <Link
+                        href={`/projects/${project.id}/payment`}
+                        className="group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:bg-blue-50"
+                      >
+                        Pay Now
+                        <span className="transition-transform group-hover:translate-x-1">
+                          →
+                        </span>
+                      </Link>
+                    )}
+
+                  </div>
+                )}
+
+                {/* FREELANCER */}
+                {!isClient && (
+                  <div className="lg:text-right">
+
+                    {paymentStatus === "paid" ? (
+                      <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-400/10 px-4 py-2.5 text-sm font-black text-emerald-300 ring-1 ring-emerald-400/20">
+                        <span>✓</span>
+                        Client Paid
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-2 rounded-xl bg-amber-400/10 px-4 py-2.5 text-sm font-black text-amber-300 ring-1 ring-amber-400/20">
+                        <span>●</span>
+                        Payment Pending
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
+              </div>
             </div>
           </div>
 
-          {/* WORKSPACE */}
-          <div className="border-t border-gray-200 bg-gray-50 p-8">
+          {/* Workspace */}
+          <div className="bg-slate-50/70 p-6 sm:p-8 lg:p-10">
 
-            <h2 className="text-xl font-bold text-gray-900">
-              Project Workspace
-            </h2>
+            <div className="max-w-2xl">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-600">
+                Collaboration
+              </p>
 
-            <p className="mt-2 text-gray-600">
-              Messaging, file sharing, delivery and project
-              completion features are available here.
-            </p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950">
+                Project Workspace
+              </h2>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Everything you need to communicate, share files and
+                complete your project in one place.
+              </p>
+            </div>
+
+            <div className="mt-7 grid gap-4 md:grid-cols-3">
 
               {/* Messages */}
               <Link
                 href={`/projects/${project.id}/messages`}
-                className="group rounded-2xl border border-gray-200 bg-white p-5 transition hover:-translate-y-1 hover:shadow-md"
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/40"
               >
-                <div className="text-2xl">
-                  💬
+                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-blue-50 transition duration-300 group-hover:scale-150" />
+
+                <div className="relative">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-xl transition duration-300 group-hover:scale-110">
+                    💬
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-black text-slate-950">
+                    Messages
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Chat with your{" "}
+                    {isClient ? "freelancer" : "client"} and keep
+                    communication organized.
+                  </p>
+
+                  <div className="mt-5 flex items-center gap-2 text-sm font-black text-blue-600">
+                    Open Messages
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
+                  </div>
                 </div>
-
-                <h3 className="mt-3 font-bold text-gray-900">
-                  Messages
-                </h3>
-
-                <p className="mt-1 text-sm text-gray-500">
-                  Chat with your{" "}
-                  {isClient ? "freelancer" : "client"}.
-                </p>
-
-                <p className="mt-4 text-sm font-semibold text-blue-600">
-                  Open Messages →
-                </p>
               </Link>
 
               {/* Files */}
               <Link
                 href={`/projects/${project.id}/files`}
-                className="group rounded-2xl border border-gray-200 bg-white p-5 transition hover:-translate-y-1 hover:shadow-md"
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-100/40"
               >
-                <div className="text-2xl">
-                  📁
+                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-violet-50 transition duration-300 group-hover:scale-150" />
+
+                <div className="relative">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-xl transition duration-300 group-hover:scale-110">
+                    📁
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-black text-slate-950">
+                    Files
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Share project files, documents and creative assets
+                    securely.
+                  </p>
+
+                  <div className="mt-5 flex items-center gap-2 text-sm font-black text-violet-600">
+                    Open Files
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
+                  </div>
                 </div>
-
-                <h3 className="mt-3 font-bold text-gray-900">
-                  Files
-                </h3>
-
-                <p className="mt-1 text-sm text-gray-500">
-                  Share project files and documents.
-                </p>
-
-                <p className="mt-4 text-sm font-semibold text-blue-600">
-                  Open Files →
-                </p>
               </Link>
 
               {/* Delivery */}
               <Link
                 href={`/projects/${project.id}/delivery`}
-                className="group rounded-2xl border border-gray-200 bg-white p-5 transition hover:-translate-y-1 hover:shadow-md"
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-100/40"
               >
-                <div className="text-2xl">
-                  🚀
+                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-emerald-50 transition duration-300 group-hover:scale-150" />
+
+                <div className="relative">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-xl transition duration-300 group-hover:scale-110">
+                    🚀
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-black text-slate-950">
+                    Delivery
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Submit, review and manage your project delivery.
+                  </p>
+
+                  <div className="mt-5 flex items-center gap-2 text-sm font-black text-emerald-600">
+                    Open Delivery
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
+                  </div>
                 </div>
-
-                <h3 className="mt-3 font-bold text-gray-900">
-                  Delivery
-                </h3>
-
-                <p className="mt-1 text-sm text-gray-500">
-                  Submit and manage project delivery.
-                </p>
-
-                <p className="mt-4 text-sm font-semibold text-blue-600">
-                  Open Delivery →
-                </p>
               </Link>
 
             </div>
           </div>
         </div>
+
+        {/* Bottom note */}
+        <div className="mt-6 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-xs text-slate-400 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            YOUTENT Project Workspace
+          </span>
+
+          <span>
+            Where Talent Meets Opportunity
+          </span>
+        </div>
+
       </section>
     </main>
   );

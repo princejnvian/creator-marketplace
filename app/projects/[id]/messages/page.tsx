@@ -46,19 +46,23 @@ export default async function MessagesPage({ params }: Props) {
 
   if (!isClient && !isFreelancer) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
-        <div className="max-w-md rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-2xl font-bold text-gray-900">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 text-slate-900">
+        <div className="w-full max-w-md rounded-3xl border border-red-100 bg-white p-8 text-center shadow-xl shadow-slate-200/50">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl">
+            🔒
+          </div>
+
+          <h1 className="mt-5 text-2xl font-black">
             Access Denied
           </h1>
 
-          <p className="mt-3 text-gray-600">
+          <p className="mt-3 text-sm leading-6 text-slate-500">
             You are not a member of this project.
           </p>
 
           <Link
             href="/dashboard"
-            className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700"
+            className="mt-7 inline-flex rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
           >
             Back to Dashboard
           </Link>
@@ -147,62 +151,121 @@ export default async function MessagesPage({ params }: Props) {
     revalidatePath(`/projects/${id}/messages`);
   }
 
+  const messageCount = messages?.length || 0;
+
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+
+      {/* Decorative background */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute left-1/4 top-0 h-72 w-72 rounded-full bg-blue-200/20 blur-3xl" />
+        <div className="absolute right-0 top-1/3 h-80 w-80 rounded-full bg-violet-200/20 blur-3xl" />
+      </div>
 
       {/* Navbar */}
-      <nav className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
 
           <Link
             href="/dashboard"
-            className="text-2xl font-extrabold tracking-tight"
+            className="group flex items-center gap-2.5"
           >
-            YOUTENT<span className="text-blue-600">.</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105">
+              Y
+            </div>
+
+            <div className="text-xl font-black tracking-tight">
+              YOUTENT<span className="text-blue-600">.</span>
+            </div>
           </Link>
 
           <Link
             href={`/projects/${project.id}`}
-            className="text-sm font-semibold text-gray-600 hover:text-blue-600"
+            className="group inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 hover:shadow-md"
           >
-            ← Back to Project
+            <span className="transition-transform group-hover:-translate-x-0.5">
+              ←
+            </span>
+            Back to Project
           </Link>
 
         </div>
       </nav>
 
       {/* Page */}
-      <section className="mx-auto max-w-4xl px-6 py-10">
+      <section className="mx-auto max-w-5xl px-5 py-8 sm:px-6 sm:py-12">
 
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-7">
 
-          <p className="text-sm font-bold uppercase tracking-wide text-blue-600">
-            Project Messages
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
 
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight">
+            <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3.5 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-blue-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+              Project Messages
+            </span>
+
+            <span className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-500">
+              {messageCount}{" "}
+              {messageCount === 1 ? "message" : "messages"}
+            </span>
+
+          </div>
+
+          <h1 className="mt-5 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
             {project.title}
           </h1>
 
-          <p className="mt-2 text-gray-600">
+          <p className="mt-3 text-sm leading-6 text-slate-500 sm:text-base">
             {isClient
-              ? "Chat with your freelancer."
-              : "Chat with your client."}
+              ? "Chat with your freelancer and keep your project communication in one place."
+              : "Chat with your client and keep your project communication in one place."}
           </p>
 
         </div>
 
-        {/* Chat Box */}
-        <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+        {/* Chat Container */}
+        <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-xl shadow-slate-200/40">
+
+          {/* Chat Header */}
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+
+            <div className="flex items-center gap-3">
+
+              <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 text-xl">
+                💬
+
+                <span className="absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
+              </div>
+
+              <div>
+                <p className="font-black text-slate-900">
+                  Project Chat
+                </p>
+
+                <p className="text-xs text-emerald-600">
+                  Conversation active
+                </p>
+              </div>
+
+            </div>
+
+            <div className="hidden rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500 sm:block">
+              {isClient ? "Client" : "Freelancer"}
+            </div>
+
+          </div>
 
           {/* Messages */}
-          <div className="min-h-[450px] space-y-4 bg-gray-50 p-6">
+          <div className="min-h-[500px] space-y-4 bg-gradient-to-b from-slate-50 to-slate-100/70 p-5 sm:p-7">
 
             {messagesError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                Unable to load messages.
-                <p className="mt-1">
+              <div className="rounded-2xl border border-red-100 bg-red-50 p-5 text-sm text-red-700">
+                <div className="font-bold">
+                  Unable to load messages.
+                </div>
+
+                <p className="mt-1 text-xs leading-5 text-red-600/80">
                   {messagesError.message}
                 </p>
               </div>
@@ -210,21 +273,24 @@ export default async function MessagesPage({ params }: Props) {
 
             {!messagesError &&
               (!messages || messages.length === 0) && (
-                <div className="flex min-h-[400px] items-center justify-center text-center">
+                <div className="flex min-h-[450px] items-center justify-center text-center">
 
-                  <div>
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-3xl">
+                  <div className="max-w-sm">
+
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] bg-white text-3xl shadow-lg shadow-slate-200/70">
                       💬
                     </div>
 
-                    <h2 className="mt-5 text-xl font-bold">
-                      No messages yet
+                    <h2 className="mt-6 text-xl font-black text-slate-950">
+                      Start the conversation
                     </h2>
 
-                    <p className="mt-2 text-sm text-gray-500">
-                      Start the conversation with your{" "}
-                      {isClient ? "freelancer" : "client"}.
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      No messages yet. Send the first message to your{" "}
+                      {isClient ? "freelancer" : "client"} and get the
+                      conversation started.
                     </p>
+
                   </div>
 
                 </div>
@@ -240,40 +306,46 @@ export default async function MessagesPage({ params }: Props) {
                   <div
                     key={message.id}
                     className={`flex ${
-                      mine
-                        ? "justify-end"
-                        : "justify-start"
+                      mine ? "justify-end" : "justify-start"
                     }`}
                   >
 
                     <div
-                      className={`max-w-[80%] rounded-2xl px-5 py-3 ${
-                        mine
-                          ? "rounded-br-md bg-blue-600 text-white"
-                          : "rounded-bl-md bg-white text-gray-900 shadow-sm border border-gray-200"
+                      className={`group max-w-[88%] sm:max-w-[75%] ${
+                        mine ? "items-end" : "items-start"
                       }`}
                     >
 
-                      <p className="whitespace-pre-wrap leading-6">
-                        {message.content}
-                      </p>
-
-                      <p
-                        className={`mt-1 text-[11px] ${
+                      <div
+                        className={`relative rounded-[20px] px-4 py-3.5 text-sm shadow-sm transition duration-200 sm:px-5 ${
                           mine
-                            ? "text-blue-100"
-                            : "text-gray-400"
+                            ? "rounded-br-md bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-blue-200/50"
+                            : "rounded-bl-md border border-slate-200 bg-white text-slate-800"
                         }`}
                       >
-                        {new Date(
-                          message.created_at
-                        ).toLocaleString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </p>
+
+                        <p className="whitespace-pre-wrap leading-6">
+                          {message.content}
+                        </p>
+
+                        <p
+                          className={`mt-2 text-[10px] font-medium ${
+                            mine
+                              ? "text-blue-100"
+                              : "text-slate-400"
+                          }`}
+                        >
+                          {new Date(
+                            message.created_at
+                          ).toLocaleString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </p>
+
+                      </div>
 
                     </div>
 
@@ -284,36 +356,78 @@ export default async function MessagesPage({ params }: Props) {
           </div>
 
           {/* Send Message */}
-          <div className="border-t border-gray-200 bg-white p-5">
+          <div className="border-t border-slate-100 bg-white p-4 sm:p-5">
 
             <form
               action={sendMessage}
               className="flex flex-col gap-3 sm:flex-row"
             >
 
-              <input
-                type="text"
-                name="message"
-                required
-                placeholder="Write a message..."
-                className="min-w-0 flex-1 rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-50"
-              />
+              <div className="relative min-w-0 flex-1">
+
+                <input
+                  type="text"
+                  name="message"
+                  required
+                  autoComplete="off"
+                  placeholder={`Message your ${
+                    isClient ? "freelancer" : "client"
+                  }...`}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
+                />
+
+              </div>
 
               <button
                 type="submit"
-                className="rounded-xl bg-blue-600 px-7 py-3 font-semibold text-white transition hover:bg-blue-700"
+                className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/25 active:translate-y-0"
               >
                 Send
+                <span className="transition-transform duration-300 group-hover:translate-x-1">
+                  →
+                </span>
               </button>
 
             </form>
+
+            <p className="mt-3 text-center text-[11px] text-slate-400">
+              Keep project communication clear and professional.
+            </p>
 
           </div>
 
         </div>
 
-      </section>
+        {/* Bottom Navigation */}
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
 
+          <Link
+            href={`/projects/${project.id}`}
+            className="group rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+          >
+            <span className="text-sm font-bold text-slate-600 group-hover:text-blue-600">
+              ← Project Overview
+            </span>
+          </Link>
+
+          <Link
+            href={`/projects/${project.id}/files`}
+            className="group rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md"
+          >
+            <span className="text-sm font-bold text-slate-600 group-hover:text-violet-600">
+              Project Files →
+            </span>
+          </Link>
+
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 flex flex-col items-center justify-between gap-2 text-xs text-slate-400 sm:flex-row">
+          <span>YOUTENT Project Workspace</span>
+          <span>Where Talent Meets Opportunity</span>
+        </div>
+
+      </section>
     </main>
   );
 }

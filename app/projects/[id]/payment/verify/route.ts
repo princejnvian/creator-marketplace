@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import Razorpay from "razorpay";
+
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 type Props = {
   params: Promise<{
@@ -9,45 +11,64 @@ type Props = {
   }>;
 };
 
-export async function POST(request: Request, { params }: Props) {
+export async function POST(
+  request: Request,
+  { params }: Props
+) {
   try {
+    // =========================================
+    // AUTHENTICATE USER
+    // =========================================
+
     const supabase = await createClient();
 
-    // Get logged-in user
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (authError || !user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        {
+          error: "Unauthorized",
+        },
+        {
+          status: 401,
+        }
       );
     }
+
+    // =========================================
+    // GET PROJECT ID
+    // =========================================
 
     const { id: projectId } = await params;
 
     if (!projectId) {
       return NextResponse.json(
-        { error: "Project ID is required" },
-        { status: 400 }
+        {
+          error: "Project ID is required",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    // Get payment details sent by Razorpay Checkout
+    // =========================================
+    // GET PAYMENT DATA FROM REQUEST
+    // =========================================
+
     const body = await request.json();
 
-    const razorpayPaymentId = String(
-      body.razorpay_payment_id || ""
-    );
+    const razorpayPaymentId =
+      body?.razorpay_payment_id?.toString().trim();
 
-    const razorpayOrderId = String(
-      body.razorpay_order_id || ""
-    );
+    const razorpayOrderId =
+      body?.razorpay_order_id?.toString().trim();
 
-    const razorpaySignature = String(
-      body.razorpay_signature || ""
-    );
+    const razorpaySignature =
+      body?.razorpay_signature?.toString().trim();
 
     if (
       !razorpayPaymentId ||
@@ -55,13 +76,53 @@ export async function POST(request: Request, { params }: Props) {
       !razorpaySignature
     ) {
       return NextResponse.json(
-        { error: "Incomplete Razorpay payment response" },
-        { status: 400 }
+        {
+          error: "Missing Razorpay payment details",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    // Get project
-    const { data: project, error: projectError } = await supabase
+    // =========================================
+    // ENV CHECK
+    // =========================================
+
+    const razorpayKeyId =
+      process.env.RAZORPAY_KEY_ID;
+
+    const razorpayKeySecret =
+      process.env.RAZORPAY_KEY_SECRET;
+
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      console.error(
+        "Razorpay environment variables are missing"
+      );
+
+      return NextResponse.json(
+        {
+          error: "Payment system is not configured",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    // =========================================
+    // GET PROJECT USING ADMIN CLIENT
+    // =========================================
+    // IMPORTANT:
+    // Admin client bypasses RLS.
+    // We manually verify that the authenticated
+    // user is the client of this project.
+    // =========================================
+
+    const {
+      data: project,
+      error: projectError,
+    } = await supabaseAdmin
       .from("projects")
       .select(`
         id,
@@ -75,173 +136,332 @@ export async function POST(request: Request, { params }: Props) {
       .maybeSingle();
 
     if (projectError) {
-      console.error("Project fetch error:", projectError);
+      console.error(
+        "Project fetch error:",
+        projectError
+      );
 
       return NextResponse.json(
-        { error: "Unable to fetch project" },
-        { status: 500 }
+        {
+          error: "Unable to verify project",
+        },
+        {
+          status: 500,
+        }
       );
     }
 
     if (!project) {
       return NextResponse.json(
-        { error: "Project not found" },
-        { status: 404 }
+        {
+          error: "Project not found",
+        },
+        {
+          status: 404,
+        }
       );
     }
 
-    // Only project client can complete the payment
+    // =========================================
+    // CLIENT OWNERSHIP CHECK
+    // =========================================
+
     if (project.client_id !== user.id) {
       return NextResponse.json(
-        { error: "Only the client can make this payment" },
-        { status: 403 }
+        {
+          error:
+            "You are not authorized to make this payment",
+        },
+        {
+          status: 403,
+        }
       );
     }
 
-    // Validate project amount
+    // =========================================
+    // PROJECT STATUS CHECK
+    // =========================================
+
+    if (project.status !== "active") {
+      return NextResponse.json(
+        {
+          error:
+            "Payment is only allowed for active projects",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    // =========================================
+    // PROJECT BUDGET CHECK
+    // =========================================
+
+    if (
+      project.budget === null ||
+      project.budget === undefined
+    ) {
+      return NextResponse.json(
+        {
+          error: "Project budget is not specified",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
     const projectAmount = Number(project.budget);
 
-    if (!Number.isFinite(projectAmount) || projectAmount <= 0) {
+    if (
+      !Number.isFinite(projectAmount) ||
+      projectAmount <= 0
+    ) {
       return NextResponse.json(
-        { error: "Invalid project amount" },
-        { status: 400 }
+        {
+          error: "Invalid project budget",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-
-    if (!keyId || !keySecret) {
-      console.error("Razorpay environment variables are missing");
-
-      return NextResponse.json(
-        { error: "Razorpay is not configured on the server" },
-        { status: 500 }
-      );
-    }
+    // =========================================
+    // RAZORPAY CLIENT
+    // =========================================
 
     const razorpay = new Razorpay({
-      key_id: keyId,
-      key_secret: keySecret,
+      key_id: razorpayKeyId,
+      key_secret: razorpayKeySecret,
     });
 
-    /*
-     * IMPORTANT:
-     * Fetch the order from Razorpay's server.
-     *
-     * We do NOT blindly trust the order_id sent by the browser.
-     */
-    const razorpayOrder = await razorpay.orders.fetch(
-      razorpayOrderId
+    // =========================================
+    // FETCH ORDER DIRECTLY FROM RAZORPAY
+    // =========================================
+
+    const razorpayOrder =
+      await razorpay.orders.fetch(
+        razorpayOrderId
+      );
+
+    // =========================================
+    // VERIFY ORDER ID
+    // =========================================
+
+    if (razorpayOrder.id !== razorpayOrderId) {
+      return NextResponse.json(
+        {
+          error: "Invalid Razorpay order",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    // =========================================
+    // VERIFY PROJECT ID FROM ORDER NOTES
+    // =========================================
+
+    const orderProjectId =
+      razorpayOrder.notes?.project_id;
+
+    if (orderProjectId !== project.id) {
+      return NextResponse.json(
+        {
+          error:
+            "Razorpay order does not belong to this project",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    // =========================================
+    // VERIFY ORDER AMOUNT
+    // =========================================
+
+    const expectedAmountPaise = Math.round(
+      projectAmount * 100
     );
 
-    // Make sure this Razorpay order belongs to this Crevo project
     if (
-      razorpayOrder.notes?.project_id !== project.id
+      Number(razorpayOrder.amount) !==
+      expectedAmountPaise
     ) {
       return NextResponse.json(
-        { error: "Payment order does not belong to this project" },
-        { status: 400 }
+        {
+          error:
+            "Razorpay order amount does not match project budget",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    // Verify amount
-    const expectedAmount = Math.round(projectAmount * 100);
+    // =========================================
+    // VERIFY ORDER CURRENCY
+    // =========================================
 
-    if (Number(razorpayOrder.amount) !== expectedAmount) {
-      return NextResponse.json(
-        { error: "Payment amount does not match project amount" },
-        { status: 400 }
-      );
-    }
-
-    // Verify currency
     if (razorpayOrder.currency !== "INR") {
       return NextResponse.json(
-        { error: "Invalid payment currency" },
-        { status: 400 }
+        {
+          error: "Invalid payment currency",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    /*
-     * Razorpay signature verification
-     *
-     * HMAC-SHA256:
-     *
-     * order_id + "|" + payment_id
-     */
-    const generatedSignature = crypto
-      .createHmac("sha256", keySecret)
-      .update(
-        `${razorpayOrder.id}|${razorpayPaymentId}`
-      )
-      .digest("hex");
+    // =========================================
+    // VERIFY RAZORPAY SIGNATURE
+    // =========================================
 
-    if (
-      generatedSignature !== razorpaySignature
-    ) {
-      console.error("Invalid Razorpay payment signature");
+    const generatedSignature =
+      crypto
+        .createHmac(
+          "sha256",
+          razorpayKeySecret
+        )
+        .update(
+          `${razorpayOrder.id}|${razorpayPaymentId}`
+        )
+        .digest("hex");
 
+   const generatedSignatureBuffer =
+  Buffer.from(generatedSignature, "utf8");
+
+const receivedSignatureBuffer =
+  Buffer.from(razorpaySignature, "utf8");
+
+const signatureIsValid =
+  generatedSignatureBuffer.length ===
+    receivedSignatureBuffer.length &&
+  crypto.timingSafeEqual(
+    generatedSignatureBuffer,
+    receivedSignatureBuffer
+  );
+
+    if (!signatureIsValid) {
       return NextResponse.json(
-        { error: "Payment verification failed" },
-        { status: 400 }
+        {
+          error:
+            "Payment signature verification failed",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    /*
-     * Signature is valid.
-     *
-     * Now fetch the actual payment from Razorpay
-     * and check its status.
-     */
+    // =========================================
+    // FETCH PAYMENT DIRECTLY FROM RAZORPAY
+    // =========================================
+
     const razorpayPayment =
       await razorpay.payments.fetch(
         razorpayPaymentId
       );
 
+    // =========================================
+    // VERIFY PAYMENT ORDER
+    // =========================================
+
     if (
-      razorpayPayment.order_id !== razorpayOrder.id
+      razorpayPayment.order_id !==
+      razorpayOrder.id
     ) {
       return NextResponse.json(
-        { error: "Payment does not match Razorpay order" },
-        { status: 400 }
+        {
+          error:
+            "Payment does not belong to this order",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    if (Number(razorpayPayment.amount) !== expectedAmount) {
+    // =========================================
+    // VERIFY PAYMENT AMOUNT
+    // =========================================
+
+    if (
+      Number(razorpayPayment.amount) !==
+      expectedAmountPaise
+    ) {
       return NextResponse.json(
-        { error: "Payment amount verification failed" },
-        { status: 400 }
+        {
+          error:
+            "Payment amount does not match project budget",
+        },
+        {
+          status: 400,
+        }
       );
     }
+
+    // =========================================
+    // VERIFY PAYMENT CURRENCY
+    // =========================================
 
     if (razorpayPayment.currency !== "INR") {
       return NextResponse.json(
-        { error: "Payment currency verification failed" },
-        { status: 400 }
+        {
+          error: "Invalid payment currency",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    /*
-     * We mark the Crevo payment as paid only
-     * when Razorpay says the payment is captured.
-     */
+    // =========================================
+    // VERIFY PAYMENT STATUS
+    // =========================================
+
     if (razorpayPayment.status !== "captured") {
       return NextResponse.json(
         {
-          error: `Payment is not captured yet. Current status: ${razorpayPayment.status}`,
+          error:
+            "Payment has not been captured yet",
+          status: razorpayPayment.status,
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    // Check whether a payment record already exists
-    const { data: existingPayment, error: existingPaymentError } =
-      await supabase
-        .from("payments")
-        .select("id, status")
-        .eq("project_id", project.id)
-        .maybeSingle();
+    // =========================================
+    // CHECK EXISTING PAYMENT
+    // =========================================
+
+    const {
+      data: existingPayment,
+      error: existingPaymentError,
+    } = await supabaseAdmin
+      .from("payments")
+      .select(`
+        id,
+        project_id,
+        client_id,
+        freelancer_id,
+        amount,
+        currency,
+        status,
+        payment_gateway,
+        gateway_payment_id,
+        gateway_order_id,
+        paid_at
+      `)
+      .eq("project_id", project.id)
+      .maybeSingle();
 
     if (existingPaymentError) {
       console.error(
@@ -250,12 +470,21 @@ export async function POST(request: Request, { params }: Props) {
       );
 
       return NextResponse.json(
-        { error: "Unable to check existing payment" },
-        { status: 500 }
+        {
+          error:
+            "Unable to check existing payment",
+        },
+        {
+          status: 500,
+        }
       );
     }
 
-       const paymentData = {
+    // =========================================
+    // PAYMENT DATA
+    // =========================================
+
+    const paymentData = {
       project_id: project.id,
       client_id: project.client_id,
       freelancer_id: project.freelancer_id,
@@ -263,64 +492,92 @@ export async function POST(request: Request, { params }: Props) {
       currency: "INR",
       status: "paid",
       payment_gateway: "razorpay",
-      gateway_payment_id: razorpayPaymentId,
-      gateway_order_id: razorpayOrder.id,
-      paid_at: new Date().toISOString(),
+      gateway_payment_id:
+        razorpayPaymentId,
+      gateway_order_id:
+        razorpayOrder.id,
+      paid_at:
+        existingPayment?.paid_at ||
+        new Date().toISOString(),
     };
-    let paymentError = null;
+
+    // =========================================
+    // SAVE PAYMENT USING ADMIN CLIENT
+    // =========================================
 
     if (existingPayment) {
-      const { error } = await supabase
+      const {
+        error: updateError,
+      } = await supabaseAdmin
         .from("payments")
         .update(paymentData)
         .eq("id", existingPayment.id);
 
-      paymentError = error;
+      if (updateError) {
+        console.error(
+          "Payment update error:",
+          updateError
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Payment verified but could not be saved",
+          },
+          {
+            status: 500,
+          }
+        );
+      }
     } else {
-      const { error } = await supabase
+      const {
+        error: insertError,
+      } = await supabaseAdmin
         .from("payments")
         .insert(paymentData);
 
-      paymentError = error;
+      if (insertError) {
+        console.error(
+          "Payment insert error:",
+          insertError
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Payment verified but could not be saved",
+          },
+          {
+            status: 500,
+          }
+        );
+      }
     }
 
-   if (paymentError) {
-  console.error(
-    "Payment database update error:",
-    paymentError
-  );
-
-  return NextResponse.json(
-    {
-      error: "Payment database save failed",
-      details: paymentError.message,
-      code: paymentError.code,
-      hint: paymentError.hint,
-      details_from_supabase: paymentError.details,
-    },
-    { status: 500 }
-  );
-}
+    // =========================================
+    // SUCCESS
+    // =========================================
 
     return NextResponse.json({
       success: true,
-      message: "Payment verified successfully",
-      projectId: project.id,
+      status: "paid",
       paymentId: razorpayPaymentId,
       orderId: razorpayOrder.id,
-      status: "paid",
     });
   } catch (error) {
-    console.error("Razorpay verification error:", error);
+    console.error(
+      "Payment verification error:",
+      error
+    );
 
     return NextResponse.json(
       {
         error:
-          error instanceof Error
-            ? error.message
-            : "Payment verification failed",
+          "Something went wrong while verifying payment",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }

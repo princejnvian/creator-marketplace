@@ -122,8 +122,8 @@ export default function PaymentButton({
       // 2. Create Razorpay Order
       // --------------------------------
 
-      const response = await fetch(
-        `/projects/${projectId}/payment/create-order`,
+     const response = await fetch(
+  `/api/projects/${projectId}/payment/create-order`,
         {
           method: "POST",
 

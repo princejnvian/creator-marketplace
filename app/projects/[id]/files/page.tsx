@@ -46,24 +46,26 @@ export default async function FilesPage({ params }: Props) {
     project.freelancer_id !== user.id
   ) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
-        <div className="max-w-md rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 text-slate-900">
+        <div className="w-full max-w-md rounded-3xl border border-red-100 bg-white p-8 text-center shadow-xl shadow-slate-200/50">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl">
+            🔒
+          </div>
 
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="mt-5 text-2xl font-black">
             Access Denied
           </h1>
 
-          <p className="mt-3 text-gray-600">
+          <p className="mt-3 text-sm leading-6 text-slate-500">
             You are not allowed to access this project.
           </p>
 
           <Link
             href="/dashboard"
-            className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700"
+            className="mt-7 inline-flex rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
           >
             Back to Dashboard
           </Link>
-
         </div>
       </main>
     );
@@ -85,15 +87,7 @@ export default async function FilesPage({ params }: Props) {
       },
     });
 
-  /*
-   * Create signed URLs BEFORE rendering the files.
-   *
-   * IMPORTANT:
-   * await cannot be used directly inside files.map()
-   * unless the callback is async.
-   *
-   * So we prepare the files here first.
-   */
+  // Create signed URLs before rendering
   const filesWithUrls =
     files && !filesError
       ? await Promise.all(
@@ -113,26 +107,43 @@ export default async function FilesPage({ params }: Props) {
         )
       : [];
 
+  const fileCount = filesWithUrls.length;
+
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+
+      {/* Decorative background */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute left-1/4 top-0 h-72 w-72 rounded-full bg-blue-200/20 blur-3xl" />
+        <div className="absolute right-0 top-1/3 h-80 w-80 rounded-full bg-violet-200/20 blur-3xl" />
+      </div>
 
       {/* ================= NAVBAR ================= */}
 
-      <nav className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
 
           <Link
             href="/dashboard"
-            className="text-2xl font-extrabold tracking-tight"
+            className="group flex items-center gap-2.5"
           >
-            YOUTENT<span className="text-blue-600">.</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105">
+              Y
+            </div>
+
+            <div className="text-xl font-black tracking-tight">
+              YOUTENT<span className="text-blue-600">.</span>
+            </div>
           </Link>
 
           <Link
             href={`/projects/${project.id}`}
-            className="text-sm font-semibold text-gray-600 hover:text-blue-600"
+            className="group inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 hover:shadow-md"
           >
-            ← Back to Project
+            <span className="transition-transform group-hover:-translate-x-0.5">
+              ←
+            </span>
+            Back to Project
           </Link>
 
         </div>
@@ -140,87 +151,171 @@ export default async function FilesPage({ params }: Props) {
 
       {/* ================= MAIN ================= */}
 
-      <section className="mx-auto max-w-4xl px-6 py-12">
+      <section className="mx-auto max-w-5xl px-5 py-8 sm:px-6 sm:py-12">
 
         {/* Header */}
 
         <div className="mb-8">
 
-          <p className="text-sm font-bold uppercase tracking-wide text-blue-600">
-            Project Files
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
 
-          <h1 className="mt-2 text-4xl font-extrabold tracking-tight">
+            <span className="inline-flex items-center gap-2 rounded-full border border-violet-100 bg-violet-50 px-3.5 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-violet-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-violet-600" />
+              Project Files
+            </span>
+
+            <span className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-500">
+              {fileCount} {fileCount === 1 ? "file" : "files"}
+            </span>
+
+          </div>
+
+          <h1 className="mt-5 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
             Files & Documents
           </h1>
 
-          <p className="mt-3 text-gray-600">
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base">
             Share project files securely with your{" "}
-            {isClient ? "freelancer" : "client"}.
+            {isClient ? "freelancer" : "client"} and keep everything
+            organized in one place.
           </p>
 
         </div>
 
         {/* ================= PROJECT INFO ================= */}
 
-        <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-200/30">
 
-          <p className="text-sm font-semibold text-gray-500">
-            Project
-          </p>
+          <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
 
-          <h2 className="mt-1 text-xl font-bold">
-            {project.title}
-          </h2>
+            <div className="flex min-w-0 items-start gap-4">
 
-          {project.description && (
-            <p className="mt-2 text-sm leading-6 text-gray-600">
-              {project.description}
-            </p>
-          )}
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-violet-50 text-xl">
+                📁
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  Current Project
+                </p>
+
+                <h2 className="mt-1 truncate text-xl font-black text-slate-950">
+                  {project.title}
+                </h2>
+
+                {project.description && (
+                  <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-6 text-slate-500">
+                    {project.description}
+                  </p>
+                )}
+              </div>
+
+            </div>
+
+            <div className="shrink-0 rounded-2xl bg-slate-50 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                Your Role
+              </p>
+
+              <p className="mt-1 text-sm font-black text-slate-900">
+                {isClient ? "Client" : "Freelancer"}
+              </p>
+            </div>
+
+          </div>
 
         </div>
 
         {/* ================= UPLOAD ================= */}
 
-        <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
+        <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-xl shadow-slate-200/30">
 
-          <FileUpload projectId={project.id} />
+          <div className="border-b border-slate-100 px-6 py-5 sm:px-7">
+
+            <div className="flex items-center gap-3">
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-lg">
+                ⬆️
+              </div>
+
+              <div>
+                <h2 className="font-black text-slate-950">
+                  Upload a File
+                </h2>
+
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Add documents, assets or other project files.
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="p-6 sm:p-7">
+            <FileUpload projectId={project.id} />
+          </div>
 
         </div>
 
         {/* ================= FILE LIST ================= */}
 
-        <div className="mt-6 rounded-3xl border border-gray-200 bg-white shadow-sm">
+        <div className="mt-6 overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-xl shadow-slate-200/30">
 
           {/* Header */}
 
-          <div className="border-b border-gray-200 p-6">
+          <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
 
-            <h2 className="text-xl font-bold">
-              Project Files
-            </h2>
+            <div>
+              <div className="flex items-center gap-3">
 
-            <p className="mt-1 text-sm text-gray-500">
-              Files shared for this project.
-            </p>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-lg">
+                  📂
+                </div>
+
+                <div>
+                  <h2 className="font-black text-slate-950">
+                    Project Files
+                  </h2>
+
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Files shared for this project.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500">
+              {fileCount} {fileCount === 1 ? "file" : "files"}
+            </div>
 
           </div>
 
           {/* ================= ERROR ================= */}
 
           {filesError && (
-            <div className="p-6">
+            <div className="p-6 sm:p-7">
 
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <div className="rounded-2xl border border-red-100 bg-red-50 p-5 text-sm text-red-700">
 
-                <p className="font-semibold">
-                  Unable to load project files.
-                </p>
+                <div className="flex items-start gap-3">
 
-                <p className="mt-1">
-                  {filesError.message}
-                </p>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-base">
+                    ⚠️
+                  </div>
+
+                  <div>
+                    <p className="font-black">
+                      Unable to load project files.
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-red-600/80">
+                      {filesError.message}
+                    </p>
+                  </div>
+
+                </div>
 
               </div>
 
@@ -231,19 +326,24 @@ export default async function FilesPage({ params }: Props) {
 
           {!filesError &&
             filesWithUrls.length === 0 && (
-              <div className="p-10 text-center">
+              <div className="flex min-h-[330px] items-center justify-center p-8 text-center">
 
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-3xl">
-                  📂
+                <div className="max-w-sm">
+
+                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] bg-gradient-to-br from-blue-50 to-violet-50 text-3xl shadow-sm">
+                    📂
+                  </div>
+
+                  <h3 className="mt-6 text-xl font-black text-slate-950">
+                    No files yet
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Upload your first project file above. It will
+                    appear here once uploaded.
+                  </p>
+
                 </div>
-
-                <h3 className="mt-5 text-lg font-bold">
-                  No files yet
-                </h3>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  Upload your first project file above.
-                </p>
 
               </div>
             )}
@@ -252,7 +352,7 @@ export default async function FilesPage({ params }: Props) {
 
           {!filesError &&
             filesWithUrls.length > 0 && (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-slate-100">
 
                 {filesWithUrls.map((file) => {
 
@@ -266,26 +366,46 @@ export default async function FilesPage({ params }: Props) {
                   return (
                     <div
                       key={`${file.name}-${file.created_at}`}
-                      className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between"
+                      className="group flex flex-col gap-5 p-5 transition duration-300 hover:bg-slate-50/70 sm:flex-row sm:items-center sm:justify-between sm:p-6"
                     >
 
                       {/* File Info */}
 
                       <div className="flex min-w-0 items-center gap-4">
 
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-2xl">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 text-xl transition duration-300 group-hover:scale-105">
                           📄
                         </div>
 
                         <div className="min-w-0">
 
-                          <h3 className="truncate font-bold text-gray-900">
+                          <h3 className="truncate text-sm font-black text-slate-900 sm:text-base">
                             {file.name}
                           </h3>
 
-                          <p className="mt-1 text-sm text-gray-500">
-                            {fileSize}
-                          </p>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+
+                            <span>
+                              {fileSize}
+                            </span>
+
+                            {file.created_at && (
+                              <>
+                                <span>•</span>
+
+                                <span>
+                                  {new Date(
+                                    file.created_at
+                                  ).toLocaleDateString("en-IN", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              </>
+                            )}
+
+                          </div>
 
                         </div>
 
@@ -293,23 +413,29 @@ export default async function FilesPage({ params }: Props) {
 
                       {/* Actions */}
 
-                      <div className="flex shrink-0 gap-3">
+                      <div className="flex shrink-0 gap-2">
 
                         <a
                           href={file.signedUrl || "#"}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                          className="group/open inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-600 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 hover:shadow-md sm:flex-none"
                         >
                           Open
+                          <span className="transition-transform group-hover/open:translate-x-0.5">
+                            ↗
+                          </span>
                         </a>
 
                         <a
                           href={file.signedUrl || "#"}
                           download={file.name}
-                          className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                          className="group/download inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-blue-600/15 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl sm:flex-none"
                         >
                           Download
+                          <span className="transition-transform group-hover/download:translate-y-0.5">
+                            ↓
+                          </span>
                         </a>
 
                       </div>
@@ -321,6 +447,37 @@ export default async function FilesPage({ params }: Props) {
               </div>
             )}
 
+        </div>
+
+        {/* Bottom Navigation */}
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+
+          <Link
+            href={`/projects/${project.id}`}
+            className="group rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+          >
+            <span className="text-sm font-bold text-slate-600 group-hover:text-blue-600">
+              ← Project Overview
+            </span>
+          </Link>
+
+          <Link
+            href={`/projects/${project.id}/messages`}
+            className="group rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md"
+          >
+            <span className="text-sm font-bold text-slate-600 group-hover:text-violet-600">
+              Project Messages →
+            </span>
+          </Link>
+
+        </div>
+
+        {/* Footer */}
+
+        <div className="mt-8 flex flex-col items-center justify-between gap-2 text-xs text-slate-400 sm:flex-row">
+          <span>YOUTENT Project Workspace</span>
+          <span>Where Talent Meets Opportunity</span>
         </div>
 
       </section>

@@ -26,92 +26,66 @@ export async function POST(
 
   const { id } = await params;
 
-  // Get request
-  const { data: projectRequest, error: fetchError } =
-    await supabase
-      .from("project_requests")
-      .select(
-        "id, client_id, creator_id, project_title, description, service, budget, deadline, status"
+  // Atomically accept the request and create the project.
+  // The PostgreSQL function handles locking and transaction safety.
+  const { error } = await supabase.rpc(
+    "accept_project_request",
+    {
+      p_request_id: id,
+    }
+  );
+
+  if (error) {
+    console.error(
+      "Accept project request error:",
+      error
+    );
+
+    if (
+      error.message.includes(
+        "Project request not found"
       )
-      .eq("id", id)
-      .maybeSingle();
+    ) {
+      return NextResponse.json(
+        {
+          error: "Project request not found.",
+        },
+        { status: 404 }
+      );
+    }
 
-  if (fetchError || !projectRequest) {
-    return NextResponse.json(
-      { error: "Project request not found." },
-      { status: 404 }
-    );
-  }
+    if (
+      error.message.includes(
+        "You are not allowed to accept this request"
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "You are not allowed to accept this request.",
+        },
+        { status: 403 }
+      );
+    }
 
-  // Make sure this request belongs to the logged-in creator
-  if (projectRequest.creator_id !== user.id) {
-    return NextResponse.json(
-      {
-        error:
-          "You are not allowed to accept this request.",
-      },
-      { status: 403 }
-    );
-  }
-
-  // Only pending requests can be accepted
-  if (projectRequest.status !== "pending") {
-    return NextResponse.json(
-      {
-        error:
-          "This request has already been processed.",
-      },
-      { status: 400 }
-    );
-  }
-
-  // Accept request
-  const { error: updateError } = await supabase
-    .from("project_requests")
-    .update({
-      status: "accepted",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .eq("creator_id", user.id);
-
-  if (updateError) {
-    return NextResponse.json(
-      { error: updateError.message },
-      { status: 500 }
-    );
-  }
-
-  // Create project from accepted request
-  const { error: projectError } = await supabase
-    .from("projects")
-    .insert({
-      request_id: projectRequest.id,
-      client_id: projectRequest.client_id,
-      freelancer_id: projectRequest.creator_id,
-      title: projectRequest.project_title,
-      description: projectRequest.description,
-      budget: projectRequest.budget,
-      deadline: projectRequest.deadline,
-      status: "active",
-    });
-
-  if (projectError) {
-    // If project creation fails, revert request back to pending
-    await supabase
-      .from("project_requests")
-      .update({
-        status: "pending",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .eq("creator_id", user.id);
+    if (
+      error.message.includes(
+        "This request has already been processed"
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "This request has already been processed.",
+        },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json(
       {
         error:
-          "Request was accepted, but project creation failed: " +
-          projectError.message,
+          "Unable to accept the project request.",
       },
       { status: 500 }
     );
