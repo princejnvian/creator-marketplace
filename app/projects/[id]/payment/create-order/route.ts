@@ -28,25 +28,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: project, error: projectError } =
-      await supabase
-        .from("projects")
-        .select(`
-          id,
-          client_id,
-          freelancer_id,
-          title,
-          budget,
-          status
-        `)
-        .eq("id", projectId)
-        .maybeSingle();
+    // Get project
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select(`
+        id,
+        client_id,
+        freelancer_id,
+        title,
+        budget,
+        status
+      `)
+      .eq("id", projectId)
+      .maybeSingle();
 
     if (projectError) {
-      console.error(
-        "Project fetch error:",
-        projectError
-      );
+      console.error("Project fetch error:", projectError);
 
       return NextResponse.json(
         { error: "Unable to fetch project" },
@@ -61,16 +58,28 @@ export async function POST(request: Request) {
       );
     }
 
+    // Only project client can pay
     if (project.client_id !== user.id) {
       return NextResponse.json(
-        {
-          error:
-            "Only the client can make this payment",
-        },
+        { error: "Only the client can make this payment" },
         { status: 403 }
       );
     }
+// Check whether this project is already paid
+const { data: existingPayment } = await supabase
+  .from("payments")
+  .select("id, status")
+  .eq("project_id", project.id)
+  .maybeSingle();
 
+if (existingPayment?.status === "paid") {
+  return NextResponse.json(
+    { error: "This project has already been paid." },
+    { status: 400 }
+  );
+}
+
+    // Validate budget
     const amount = Number(project.budget);
 
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -81,19 +90,13 @@ export async function POST(request: Request) {
     }
 
     const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret =
-      process.env.RAZORPAY_KEY_SECRET;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!keyId || !keySecret) {
-      console.error(
-        "Razorpay environment variables are missing"
-      );
+      console.error("Razorpay environment variables are missing");
 
       return NextResponse.json(
-        {
-          error:
-            "Razorpay is not configured on the server",
-        },
+        { error: "Razorpay is not configured on the server" },
         { status: 500 }
       );
     }
@@ -103,9 +106,8 @@ export async function POST(request: Request) {
       key_secret: keySecret,
     });
 
-    const amountInPaise = Math.round(
-      amount * 100
-    );
+    // Razorpay expects amount in paise
+    const amountInPaise = Math.round(amount * 100);
 
     const order = await razorpay.orders.create({
       amount: amountInPaise,
@@ -127,10 +129,7 @@ export async function POST(request: Request) {
       projectId: project.id,
     });
   } catch (error) {
-    console.error(
-      "Razorpay create order error:",
-      error
-    );
+    console.error("Razorpay create order error:", error);
 
     return NextResponse.json(
       {

@@ -32,6 +32,7 @@ export default async function RequestsPage() {
       client_id
     `)
     .eq("creator_id", user.id)
+    .neq("status", "declined")
     .order("created_at", { ascending: false });
 
   // ================= GET CLIENT IDS =================

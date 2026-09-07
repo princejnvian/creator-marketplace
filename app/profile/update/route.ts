@@ -46,6 +46,42 @@ export async function POST(request: Request) {
         ? body.avatarUrl.trim()
         : "";
 
+    const categories = Array.isArray(body.categories)
+      ? body.categories.filter((item: unknown): item is string => typeof item === "string").slice(0, 3)
+      : [];
+
+    const primaryCategory =
+      typeof body.primaryCategory === "string" && categories.includes(body.primaryCategory)
+        ? body.primaryCategory
+        : categories[0] || null;
+
+    const startingPrice =
+      body.startingPrice === null || body.startingPrice === undefined || body.startingPrice === ""
+        ? null
+        : Number(body.startingPrice);
+
+    const servicePackages = Array.isArray(body.servicePackages)
+      ? body.servicePackages.slice(0, 3).map((item: any) => ({
+          id: typeof item?.id === "string" ? item.id.slice(0, 40) : crypto.randomUUID(),
+          name: typeof item?.name === "string" ? item.name.slice(0, 40) : "Package",
+          description: typeof item?.description === "string" ? item.description.slice(0, 240) : "",
+          price: Math.max(0, Number(item?.price) || 0),
+          deliveryDays: Math.max(1, Math.min(365, Number(item?.deliveryDays) || 1)),
+          revisions: Math.max(0, Math.min(50, Number(item?.revisions) || 0)),
+        }))
+      : [];
+
+    const portfolio = Array.isArray(body.portfolio)
+      ? body.portfolio.slice(0, 12).map((item: any) => ({
+          id: typeof item?.id === "string" ? item.id.slice(0, 80) : crypto.randomUUID(),
+          title: typeof item?.title === "string" ? item.title.slice(0, 100) : "Portfolio Work",
+          description: typeof item?.description === "string" ? item.description.slice(0, 300) : "",
+          url: typeof item?.url === "string" ? item.url.slice(0, 2000) : "",
+          mediaType: item?.mediaType === "video" || item?.mediaType === "audio" ? item.mediaType : "image",
+          category: typeof item?.category === "string" ? item.category.slice(0, 80) : categories[0] || "Creative Work",
+        }))
+      : [];
+
     if (!fullName) {
       return NextResponse.json(
         { error: "Please enter your full name." },
@@ -91,9 +127,23 @@ export async function POST(request: Request) {
       );
     }
 
-    if (skills.length > 5) {
+    if (skills.length > 8) {
       return NextResponse.json(
-        { error: "You can select up to 5 skills." },
+        { error: "You can select up to 8 skills." },
+        { status: 400 }
+      );
+    }
+
+    if (categories.length > 3) {
+      return NextResponse.json(
+        { error: "You can select up to 3 categories." },
+        { status: 400 }
+      );
+    }
+
+    if (startingPrice !== null && (!Number.isFinite(startingPrice) || startingPrice < 0 || startingPrice > 10000000)) {
+      return NextResponse.json(
+        { error: "Starting price must be between ₹0 and ₹1,00,00,000." },
         { status: 400 }
       );
     }
@@ -143,6 +193,11 @@ export async function POST(request: Request) {
           account_type: accountType,
           skills,
           avatar_url: avatarUrl,
+          categories,
+          primary_category: primaryCategory,
+          starting_price: startingPrice,
+          service_packages: servicePackages,
+          portfolio,
           updated_at: new Date().toISOString(),
         },
         {

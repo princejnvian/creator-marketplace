@@ -443,67 +443,107 @@ export default async function ProjectPage({ params }: Props) {
               </Link>
 
               {/* Files */}
-              <Link
-                href={`/projects/${project.id}/files`}
-                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-100/40"
-              >
-                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-violet-50 transition duration-300 group-hover:scale-150" />
+              {paymentStatus === "paid" ? (
+                <Link
+                  href={`/projects/${project.id}/files`}
+                  className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-100/40"
+                >
+                  <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-violet-50 transition duration-300 group-hover:scale-150" />
 
-                <div className="relative">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-xl transition duration-300 group-hover:scale-110">
-                    📁
+                  <div className="relative">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-xl transition duration-300 group-hover:scale-110">
+                      📁
+                    </div>
+
+                    <h3 className="mt-5 text-lg font-black text-slate-950">
+                      Files
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      Share project files, documents and creative assets
+                      securely.
+                    </p>
+
+                    <div className="mt-5 flex items-center gap-2 text-sm font-black text-violet-600">
+                      Open Files
+                      <span className="transition-transform duration-300 group-hover:translate-x-1">
+                        →
+                      </span>
+                    </div>
                   </div>
-
-                  <h3 className="mt-5 text-lg font-black text-slate-950">
-                    Files
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Share project files, documents and creative assets
-                    securely.
+                </Link>
+              ) : (
+                <div className="relative overflow-hidden rounded-2xl border border-violet-100 bg-violet-50/60 p-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl shadow-sm">
+                    🔒
+                  </div>
+                  <h3 className="mt-5 text-lg font-black text-slate-950">Files</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Project files will become available after the client completes payment.
                   </p>
-
-                  <div className="mt-5 flex items-center gap-2 text-sm font-black text-violet-600">
-                    Open Files
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">
-                      →
-                    </span>
+                  <div className="mt-5 text-sm font-black text-violet-600">
+                    Available after payment
                   </div>
                 </div>
-              </Link>
+              )}
 
               {/* Delivery */}
-              <Link
-                href={`/projects/${project.id}/delivery`}
-                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-100/40"
-              >
-                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-emerald-50 transition duration-300 group-hover:scale-150" />
+              {paymentStatus === "paid" ? (
+                <Link
+                  href={`/projects/${project.id}/delivery`}
+                  className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-100/40"
+                >
+                  <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-emerald-50 transition duration-300 group-hover:scale-150" />
 
-                <div className="relative">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-xl transition duration-300 group-hover:scale-110">
-                    🚀
+                  <div className="relative">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-xl transition duration-300 group-hover:scale-110">
+                      🚀
+                    </div>
+
+                    <h3 className="mt-5 text-lg font-black text-slate-950">
+                      Delivery
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      Submit, review and manage your project delivery.
+                    </p>
+
+                    <div className="mt-5 flex items-center gap-2 text-sm font-black text-emerald-600">
+                      Open Delivery
+                      <span className="transition-transform duration-300 group-hover:translate-x-1">
+                        →
+                      </span>
+                    </div>
                   </div>
-
-                  <h3 className="mt-5 text-lg font-black text-slate-950">
-                    Delivery
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Submit, review and manage your project delivery.
+                </Link>
+              ) : (
+                <div className="relative overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/60 p-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl shadow-sm">
+                    🔒
+                  </div>
+                  <h3 className="mt-5 text-lg font-black text-slate-950">Delivery</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Delivery tools will become available after the client completes payment.
                   </p>
-
-                  <div className="mt-5 flex items-center gap-2 text-sm font-black text-emerald-600">
-                    Open Delivery
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">
-                      →
-                    </span>
+                  <div className="mt-5 text-sm font-black text-emerald-600">
+                    Available after payment
                   </div>
                 </div>
-              </Link>
+              )}
 
             </div>
           </div>
         </div>
+
+        {project.status === "completed" && (
+          <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div><p className="text-sm font-black text-emerald-900">Project completed</p><p className="mt-1 text-xs text-emerald-700">Delivery accepted. The release workflow has completed.</p></div>
+            <div className="flex gap-2">
+              {isClient && <Link href={`/projects/${project.id}/review`} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white hover:bg-emerald-700">Leave Review</Link>}
+              {!isClient && <Link href="/wallet" className="rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black text-white hover:bg-blue-600">Open Wallet</Link>}
+            </div>
+          </div>
+        )}
 
         {/* Bottom note */}
         <div className="mt-6 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-xs text-slate-400 shadow-sm sm:flex-row sm:items-center sm:justify-between">

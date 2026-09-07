@@ -1,873 +1,232 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import MarketplaceHeader from "@/components/MarketplaceHeader";
 
-const availableSkills = [
-  "Video Editing",
-  "Thumbnail Design",
-  "Voice Over",
-  "Shorts Editing",
-  "Reels Editing",
-  "YouTube Editing",
-  "Motion Graphics",
-  "Animation",
-  "Graphic Design",
-  "Script Writing",
+const categories = [
+  "Graphics & Design",
+  "Video & Animation",
+  "Writing & Translation",
+  "Music & Audio",
+  "Programming & Tech",
+  "Digital Marketing",
+  "AI Services",
+  "Photography",
+  "Business",
+  "Finance",
 ];
 
-type AccountType = "client" | "freelancer";
+const availableSkills = [
+  "Video Editing", "Thumbnail Design", "Voice Over", "Shorts Editing",
+  "Reels Editing", "YouTube Editing", "Motion Graphics", "Animation",
+  "Graphic Design", "Script Writing", "Audio Editing", "SEO",
+  "Social Media", "Web Development", "AI Content", "Photography",
+];
+
+type PortfolioItem = {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  mediaType: "image" | "video" | "audio";
+  category: string;
+};
+
+type ServicePackage = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  deliveryDays: number;
+  revisions: number;
+};
+
+const defaultPackages: ServicePackage[] = [
+  { id: "basic", name: "Basic", description: "A focused starter package for simple projects.", price: 499, deliveryDays: 3, revisions: 1 },
+  { id: "standard", name: "Standard", description: "A complete package for most client needs.", price: 1499, deliveryDays: 5, revisions: 2 },
+  { id: "premium", name: "Premium", description: "A polished end-to-end package with extra value.", price: 2999, deliveryDays: 7, revisions: 3 },
+];
 
 export default function ProfilePage() {
   const supabase = createClient();
   const router = useRouter();
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
-
-  const [accountType, setAccountType] =
-    useState<AccountType>("client");
-
+  const [accountType, setAccountType] = useState<"client" | "freelancer">("client");
   const [skills, setSkills] = useState<string[]>([]);
-
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [primaryCategory, setPrimaryCategory] = useState("");
+  const [startingPrice, setStartingPrice] = useState(499);
+  const [packages, setPackages] = useState<ServicePackage[]>(defaultPackages);
+  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // ================= LOAD PROFILE =================
-
   useEffect(() => {
     async function loadProfile() {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          router.replace("/login");
-          return;
-        }
-
-        setEmail(user.email || "");
-
-        const { data: profile, error: profileError } =
-          await supabase
-            .from("profiles")
-            .select(
-              "full_name, username, bio, account_type, skills, avatar_url"
-            )
-            .eq("id", user.id)
-            .maybeSingle();
-
-        if (profileError) {
-          console.error(profileError);
-          setError("Unable to load your profile.");
-        }
-
-        if (profile) {
-          setFullName(profile.full_name || "");
-          setUsername(profile.username || "");
-          setBio(profile.bio || "");
-
-          if (
-            profile.account_type === "freelancer" ||
-            profile.account_type === "client"
-          ) {
-            setAccountType(profile.account_type);
-          }
-
-          setSkills(
-            Array.isArray(profile.skills)
-              ? profile.skills
-              : []
-          );
-
-          setAvatarUrl(profile.avatar_url || "");
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Something went wrong while loading your profile.");
-      } finally {
-        setLoading(false);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.replace("/login"); return; }
+      setEmail(user.email || "");
+      const { data: profile } = await supabase.from("profiles").select("full_name, username, bio, account_type, skills, avatar_url, primary_category, categories, starting_price, service_packages, portfolio").eq("id", user.id).maybeSingle();
+      if (profile) {
+        setFullName(profile.full_name || "");
+        setUsername(profile.username || "");
+        setBio(profile.bio || "");
+        if (profile.account_type === "freelancer" || profile.account_type === "client") setAccountType(profile.account_type);
+        setSkills(Array.isArray(profile.skills) ? profile.skills : []);
+        setSelectedCategories(Array.isArray(profile.categories) ? profile.categories : []);
+        setPrimaryCategory(profile.primary_category || "");
+        setStartingPrice(Number(profile.starting_price) || 499);
+        setPackages(Array.isArray(profile.service_packages) && profile.service_packages.length === 3 ? profile.service_packages : defaultPackages);
+        setPortfolio(Array.isArray(profile.portfolio) ? profile.portfolio : []);
+        setAvatarUrl(profile.avatar_url || "");
       }
+      setLoading(false);
     }
-
     loadProfile();
   }, [router, supabase]);
 
-  // ================= AVATAR UPLOAD =================
-
-  async function handleAvatarUpload(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
+  async function handleAvatarUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(""); setSuccess("");
+    if (!file.type.startsWith("image/")) { setError("Please select an image file."); return; }
+    if (file.size > 5 * 1024 * 1024) { setError("Image size must be less than 5MB."); return; }
+    setUploadingAvatar(true);
     try {
-      setError("");
-      setSuccess("");
-
-      const file = e.target.files?.[0];
-
-      if (!file) {
-        return;
-      }
-
-      if (!file.type.startsWith("image/")) {
-        setError("Please select an image file.");
-        e.target.value = "";
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Image size must be less than 5MB.");
-        e.target.value = "";
-        return;
-      }
-
-      setUploading(true);
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      const fileExt =
-        file.name.split(".").pop()?.toLowerCase() || "jpg";
-
-      const allowedExtensions = ["jpg", "jpeg", "png", "webp"];
-
-      if (!allowedExtensions.includes(fileExt)) {
-        setError("Only JPG, PNG or WEBP images are allowed.");
-        setUploading(false);
-        e.target.value = "";
-        return;
-      }
-
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        console.error(uploadError);
-        setError(uploadError.message);
-        setUploading(false);
-        e.target.value = "";
-        return;
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-      /*
-       * IMPORTANT:
-       * We do NOT directly update profiles here anymore.
-       * The server-side profile API handles the database update.
-       */
-
-      const response = await fetch("/api/profile/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullName: fullName.trim(),
-          username: username.trim().toLowerCase(),
-          bio: bio.trim(),
-          skills,
-          avatarUrl: publicUrl,
-        }),
-      });
-
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        setError(
-          result?.error ||
-            "Photo uploaded, but profile could not be updated."
-        );
-        setUploading(false);
-        e.target.value = "";
-        return;
-      }
-
-      setAvatarUrl(publicUrl);
-      setSuccess("Profile photo uploaded successfully!");
-
-      setUploading(false);
-      e.target.value = "";
-
-      router.refresh();
-    } catch (err) {
-      console.error(err);
-      setError("Something went wrong while uploading the photo.");
-      setUploading(false);
-      e.target.value = "";
-    }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.replace("/login"); return; }
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${user.id}-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { cacheControl: "3600", upsert: false });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      const response = await fetch("/api/profile/update", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fullName, username, bio, skills, categories: selectedCategories, primaryCategory, startingPrice, servicePackages: packages, portfolio, avatarUrl: publicUrl }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to update profile photo.");
+      setAvatarUrl(publicUrl); setSuccess("Profile photo updated.");
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to upload profile photo."); }
+    finally { setUploadingAvatar(false); }
   }
 
-  // ================= SKILLS =================
-
   function toggleSkill(skill: string) {
-    setSkills((currentSkills) => {
-      if (currentSkills.includes(skill)) {
-        return currentSkills.filter((item) => item !== skill);
-      }
+    setSkills((current) => current.includes(skill) ? current.filter((item) => item !== skill) : current.length >= 8 ? current : [...current, skill]);
+  }
 
-      if (currentSkills.length >= 5) {
-        return currentSkills;
+  function toggleCategory(category: string) {
+    setSelectedCategories((current) => {
+      if (current.includes(category)) {
+        if (primaryCategory === category) setPrimaryCategory("");
+        return current.filter((item) => item !== category);
       }
-
-      return [...currentSkills, skill];
+      if (current.length >= 3) return current;
+      if (!primaryCategory) setPrimaryCategory(category);
+      return [...current, category];
     });
   }
 
-  // ================= SAVE PROFILE =================
+  function updatePackage(id: string, field: keyof ServicePackage, value: string) {
+    setPackages((current) => current.map((item) => item.id === id ? { ...item, [field]: field === "price" || field === "deliveryDays" || field === "revisions" ? Math.max(0, Number(value) || 0) : value } : item));
+  }
 
-  async function handleSave(
-    e: React.FormEvent<HTMLFormElement>
-  ) {
-    e.preventDefault();
-
-    setError("");
-    setSuccess("");
-
-    const cleanName = fullName.trim();
-    const cleanUsername = username.trim().toLowerCase();
-    const cleanBio = bio.trim();
-
-    if (!cleanName) {
-      setError("Please enter your full name.");
-      return;
-    }
-
-    if (!cleanUsername) {
-      setError("Please choose a username.");
-      return;
-    }
-
-    if (!/^[a-z0-9_]+$/.test(cleanUsername)) {
-      setError(
-        "Username can only contain lowercase letters, numbers and underscores."
-      );
-      return;
-    }
-
-    if (cleanUsername.length > 30) {
-      setError("Username must be 30 characters or less.");
-      return;
-    }
-
-    if (cleanBio.length > 500) {
-      setError("Bio must be 500 characters or less.");
-      return;
-    }
-
-    if (skills.length > 5) {
-      setError("You can select up to 5 skills.");
-      return;
-    }
-
-    setSaving(true);
-
+  async function uploadPortfolio(file: File) {
+    setError(""); setSuccess("");
+    if (portfolio.length >= 12) { setError("You can add up to 12 portfolio items."); return; }
+    setUploadingPortfolio(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      /*
-       * IMPORTANT SECURITY CHANGE:
-       *
-       * accountType is intentionally NOT sent to the API.
-       *
-       * The server keeps the existing account_type and does
-       * not trust the browser to change it.
-       */
-
-      const response = await fetch("/api/profile/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullName: cleanName,
-          username: cleanUsername,
-          bio: cleanBio,
-          skills,
-          avatarUrl,
-        }),
-      });
-
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        if (
-          result?.code === "23505" ||
-          result?.error?.toLowerCase?.().includes("username")
-        ) {
-          setError(
-            "That username is already taken. Please choose another one."
-          );
-        } else {
-          setError(
-            result?.error || "Unable to save your profile."
-          );
-        }
-
-        setSaving(false);
-        return;
-      }
-
-      if (
-        result?.accountType === "freelancer" ||
-        result?.accountType === "client"
-      ) {
-        setAccountType(result.accountType);
-      }
-
-      setFullName(cleanName);
-      setUsername(cleanUsername);
-      setBio(cleanBio);
-
-      setSuccess("Profile saved successfully!");
-
-      setSaving(false);
-
-      setTimeout(() => {
-        router.push("/dashboard");
-        router.refresh();
-      }, 800);
-    } catch (err) {
-      console.error(err);
-      setError("Something went wrong while saving your profile.");
-      setSaving(false);
-    }
+      const form = new FormData(); form.append("file", file);
+      const response = await fetch("/api/portfolio/upload", { method: "POST", body: form });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to upload portfolio file.");
+      const item: PortfolioItem = { id: crypto.randomUUID(), title: file.name.replace(/\.[^.]+$/, ""), description: "", url: result.url, mediaType: result.mediaType, category: primaryCategory || selectedCategories[0] || "Creative Work" };
+      setPortfolio((current) => [...current, item]); setSuccess("Portfolio item uploaded. Add a title and save your profile.");
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to upload portfolio file."); }
+    finally { setUploadingPortfolio(false); }
   }
 
-  // ================= LOADING =================
+  function removePortfolio(id: string) { setPortfolio((current) => current.filter((item) => item.id !== id)); }
 
-  if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
-            <div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
-          </div>
-
-          <p className="mt-4 text-sm font-medium text-slate-500">
-            Loading your profile...
-          </p>
-        </div>
-      </main>
-    );
+  async function handleSave(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); setError(""); setSuccess("");
+    const cleanName = fullName.trim(); const cleanUsername = username.trim().toLowerCase(); const cleanBio = bio.trim();
+    if (!cleanName) return setError("Please enter your full name.");
+    if (!cleanUsername || !/^[a-z0-9_]+$/.test(cleanUsername)) return setError("Username can only contain lowercase letters, numbers and underscores.");
+    if (cleanUsername.length > 30) return setError("Username must be 30 characters or less.");
+    if (cleanBio.length > 500) return setError("Bio must be 500 characters or less.");
+    if (accountType === "freelancer" && selectedCategories.length === 0) return setError("Please select at least one category for your services.");
+    setSaving(true);
+    try {
+      const response = await fetch("/api/profile/update", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fullName: cleanName, username: cleanUsername, bio: cleanBio, skills, categories: selectedCategories, primaryCategory, startingPrice: accountType === "freelancer" ? startingPrice : null, servicePackages: accountType === "freelancer" ? packages : [], portfolio: accountType === "freelancer" ? portfolio : [], avatarUrl }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to save your profile.");
+      setSuccess("Profile saved successfully."); setFullName(cleanName); setUsername(cleanUsername); setBio(cleanBio);
+      setTimeout(() => { router.push("/dashboard"); router.refresh(); }, 700);
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to save your profile."); }
+    finally { setSaving(false); }
   }
 
-  const profileScore =
-    (fullName ? 25 : 0) +
-    (username ? 20 : 0) +
-    (bio ? 20 : 0) +
-    (avatarUrl ? 20 : 0) +
-    (skills.length > 0 ? 15 : 0);
+  if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl"><div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" /><p className="mt-4 text-sm font-semibold text-slate-500">Loading your profile...</p></div></main>;
+
+  const profileScore = Math.min(100, (fullName ? 15 : 0) + (username ? 15 : 0) + (bio ? 15 : 0) + (avatarUrl ? 15 : 0) + (skills.length ? 15 : 0) + (accountType === "freelancer" && selectedCategories.length ? 15 : 10) + (accountType === "freelancer" && portfolio.length ? 5 : 0));
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      {/* ================= NAVBAR ================= */}
-
-      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
-          <Link
-            href="/dashboard"
-            className="group flex items-center gap-2.5"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105 group-hover:rotate-1">
-              Y
-            </div>
-
-            <div className="text-xl font-black tracking-tight sm:text-2xl">
-              YOUTENT<span className="text-blue-600">.</span>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="group inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 transition duration-300 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-          >
-            <span className="transition-transform duration-300 group-hover:-translate-x-1">
-              ←
-            </span>
-            Dashboard
-          </Link>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_10%_0%,rgba(59,130,246,0.10),transparent_28%),radial-gradient(circle_at_90%_8%,rgba(124,58,237,0.09),transparent_25%),linear-gradient(180deg,#f5f8fc 0%,#edf3f9 55%,#f7f9fc 100%)] text-slate-950">
+      <MarketplaceHeader accountType={accountType} />
+      <section className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-8">
+        <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div><span className="inline-flex rounded-full border border-blue-100 bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700 shadow-sm">Profile Studio</span><h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Build a profile clients remember.</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Create your identity, choose your marketplace categories, showcase your work and publish clear service pricing.</p></div>
+          <div className="w-full max-w-xs rounded-2xl border border-white/80 bg-white/80 p-4 shadow-lg backdrop-blur"><div className="flex justify-between text-xs font-bold"><span>Profile strength</span><span className="text-blue-600">{profileScore}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600" style={{ width: `${profileScore}%` }} /></div></div>
         </div>
-      </nav>
 
-      {/* ================= HERO ================= */}
-
-      <section className="relative overflow-hidden border-b border-slate-200 bg-white">
-        <div className="pointer-events-none absolute -left-32 -top-32 h-80 w-80 rounded-full bg-blue-200/30 blur-3xl" />
-        <div className="pointer-events-none absolute -right-32 top-0 h-80 w-80 rounded-full bg-violet-200/30 blur-3xl" />
-
-        <div className="relative mx-auto max-w-4xl px-5 py-10 sm:px-6 sm:py-14">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-blue-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-              Profile Settings
-            </div>
-
-            <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-              Make your profile{" "}
-              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
-                stand out.
-              </span>
-            </h1>
-
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-              Tell the YOUTENT community who you are, what you do and
-              what you can bring to the table.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= PAGE ================= */}
-
-      <section className="px-5 py-10 sm:px-6 sm:py-12">
-        <div className="mx-auto max-w-4xl">
-          {/* ================= PROFILE COMPLETION ================= */}
-
-          <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-black text-slate-900">
-                  Profile strength
-                </p>
-
-                <p className="mt-1 text-xs text-slate-500">
-                  A complete profile helps people understand you better.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-violet-600 transition-all duration-500"
-                    style={{ width: `${profileScore}%` }}
-                  />
+        <form onSubmit={handleSave} className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+            <div className="space-y-6">
+              <section className="premium-card p-6 sm:p-8">
+                <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+                  <div className="relative shrink-0">{avatarUrl ? <img src={avatarUrl} alt={fullName || "Profile"} className="h-28 w-28 rounded-3xl object-cover shadow-xl ring-4 ring-white" /> : <div className="flex h-28 w-28 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-4xl font-black text-white shadow-xl">{fullName.charAt(0).toUpperCase() || "Y"}</div>}<label className="absolute -bottom-2 -right-2 flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-4 border-white bg-slate-950 text-white shadow-lg hover:bg-blue-600">{uploadingAvatar ? "…" : "✦"}<input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} /></label></div>
+                  <div><p className="text-xs font-black uppercase tracking-widest text-blue-600">Identity</p><h2 className="mt-1 text-2xl font-black">Your public profile</h2><p className="mt-2 text-sm leading-6 text-slate-500">This information appears across YOUTENT when clients discover you.</p><p className="mt-3 text-xs font-semibold text-slate-400">{email}</p></div>
                 </div>
+                <div className="mt-7 grid gap-4 sm:grid-cols-2"><Field label="Full Name" value={fullName} onChange={setFullName} placeholder="Your professional name" /><Field label="Username" value={username} onChange={setUsername} placeholder="your_username" /></div>
+                <div className="mt-4"><label className="mb-2 block text-sm font-bold">Bio</label><textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={500} rows={5} placeholder="Tell clients what you do, your style and the results you can deliver..." className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10" /><div className="mt-1 text-right text-xs text-slate-400">{bio.length}/500</div></div>
+              </section>
 
-                <span className="text-sm font-black text-slate-900">
-                  {profileScore}%
-                </span>
-              </div>
+              {accountType === "freelancer" && <>
+                <section className="premium-card p-6 sm:p-8">
+                  <div><p className="text-xs font-black uppercase tracking-widest text-blue-600">Marketplace categories</p><h2 className="mt-1 text-2xl font-black">What do you sell?</h2><p className="mt-2 text-sm text-slate-500">Choose up to 3 categories. Your primary category powers discovery and the top navigation.</p></div>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2"><div className="sm:col-span-2"><label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Primary category</label><select value={primaryCategory} onChange={(e) => setPrimaryCategory(e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500"> <option value="">Choose your main category</option>{selectedCategories.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>{categories.map((category) => <button key={category} type="button" onClick={() => toggleCategory(category)} className={`relative rounded-2xl border p-4 text-left transition ${selectedCategories.includes(category) ? "border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md shadow-blue-100" : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"}`}><span className="text-sm font-bold">{category}</span><span className="mt-1 block text-xs text-slate-500">{selectedCategories.includes(category) ? "Selected for your services" : "Add to your profile"}</span>{selectedCategories.includes(category) && <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">✓</span>}</button>)}</div>
+                </section>
+
+                <section className="premium-card p-6 sm:p-8"><div><p className="text-xs font-black uppercase tracking-widest text-violet-600">Skills</p><h2 className="mt-1 text-2xl font-black">Your expertise</h2><p className="mt-2 text-sm text-slate-500">Pick up to 8 skills that describe the services you can deliver.</p></div><div className="mt-5 flex flex-wrap gap-2.5">{availableSkills.map((skill) => <button key={skill} type="button" onClick={() => toggleSkill(skill)} className={`rounded-full border px-4 py-2.5 text-xs font-bold transition ${skills.includes(skill) ? "border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/20" : "border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"}`}>{skills.includes(skill) && "✓ "}{skill}</button>)}</div><p className="mt-4 text-xs font-bold text-slate-400">{skills.length}/8 selected</p></section>
+
+                <section className="premium-card overflow-hidden p-6 sm:p-8"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-black uppercase tracking-widest text-indigo-600">Portfolio</p><h2 className="mt-1 text-2xl font-black">Showcase your best work</h2><p className="mt-2 max-w-xl text-sm text-slate-500">Add images, short videos or audio demos. These will appear on your public creator profile.</p></div><label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-600">{uploadingPortfolio ? "Uploading..." : "＋ Add work"}<input type="file" accept="image/*,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/ogg,audio/mp4" className="hidden" disabled={uploadingPortfolio} onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadPortfolio(file); e.currentTarget.value = ""; }} /></label></div>
+                  {portfolio.length === 0 ? <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-xl shadow-sm">▧</div><h3 className="mt-3 font-black">Your portfolio is empty</h3><p className="mt-1 text-sm text-slate-500">Upload a thumbnail, editing sample, reel or voice demo to get started.</p></div> : <div className="mt-6 grid gap-4 sm:grid-cols-2">{portfolio.map((item) => <div key={item.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="aspect-[16/10] bg-slate-100">{item.mediaType === "image" ? <img src={item.url} alt={item.title} className="h-full w-full object-cover" /> : item.mediaType === "video" ? <video src={item.url} controls className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center p-5"><audio src={item.url} controls className="w-full" /></div>}</div><div className="p-4"><input value={item.title} onChange={(e) => setPortfolio((all) => all.map((x) => x.id === item.id ? { ...x, title: e.target.value } : x))} className="w-full rounded-lg border border-transparent px-2 py-1 text-sm font-black outline-none hover:border-slate-200 focus:border-blue-400" /><textarea value={item.description} onChange={(e) => setPortfolio((all) => all.map((x) => x.id === item.id ? { ...x, description: e.target.value } : x))} placeholder="Short description" rows={2} className="mt-1 w-full resize-none rounded-lg border border-transparent px-2 py-1 text-xs text-slate-500 outline-none hover:border-slate-200 focus:border-blue-400" /><div className="mt-2 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{item.category}</span><button type="button" onClick={() => removePortfolio(item.id)} className="text-xs font-bold text-red-500 hover:text-red-700">Remove</button></div></div></div>)}</div>}
+                </section>
+
+                <section className="premium-card p-6 sm:p-8"><div><p className="text-xs font-black uppercase tracking-widest text-emerald-600">Pricing</p><h2 className="mt-1 text-2xl font-black">Set your starting price</h2><p className="mt-2 text-sm text-slate-500">Give clients a clear idea of where your services start. You can discuss custom scopes inside a project.</p></div><div className="mt-5 max-w-sm"><label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Starting price (INR)</label><div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 focus-within:border-blue-500 focus-within:bg-white"><span className="text-lg font-black">₹</span><input type="number" min={0} value={startingPrice} onChange={(e) => setStartingPrice(Math.max(0, Number(e.target.value) || 0))} className="w-full bg-transparent px-3 py-3.5 text-lg font-black outline-none" /></div></div><div className="mt-8 grid gap-4 lg:grid-cols-3">{packages.map((item) => <div key={item.id} className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-5 shadow-sm"><div className="flex items-center justify-between"><h3 className="font-black">{item.name}</h3><span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700">PACKAGE</span></div><input value={item.description} onChange={(e) => updatePackage(item.id, "description", e.target.value)} className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none focus:border-blue-400" /><label className="mt-4 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Price</label><input type="number" min={0} value={item.price} onChange={(e) => updatePackage(item.id, "price", e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-black outline-none focus:border-blue-400" /><div className="mt-3 grid grid-cols-2 gap-2"><div><label className="text-[10px] font-bold text-slate-400">Delivery days</label><input type="number" min={1} value={item.deliveryDays} onChange={(e) => updatePackage(item.id, "deliveryDays", e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold outline-none" /></div><div><label className="text-[10px] font-bold text-slate-400">Revisions</label><input type="number" min={0} value={item.revisions} onChange={(e) => updatePackage(item.id, "revisions", e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold outline-none" /></div></div></div>)}</div></section>
+              </>}
             </div>
+
+            <aside className="h-fit space-y-4 lg:sticky lg:top-28"><div className="premium-card overflow-hidden"><div className="bg-gradient-to-br from-blue-700 via-indigo-700 to-violet-700 p-6 text-white"><p className="text-xs font-bold uppercase tracking-widest text-blue-100">Live preview</p><div className="mt-5 flex items-center gap-3">{avatarUrl ? <img src={avatarUrl} alt="" className="h-14 w-14 rounded-2xl object-cover ring-2 ring-white/30" /> : <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-xl font-black">{fullName.charAt(0).toUpperCase() || "Y"}</div>}<div className="min-w-0"><p className="truncate font-black">{fullName || "Your Name"}</p><p className="truncate text-xs text-blue-100">@{username || "username"}</p></div></div></div><div className="space-y-4 p-5"><div><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Categories</p><div className="mt-2 flex flex-wrap gap-1.5">{selectedCategories.length ? selectedCategories.map((item) => <span key={item} className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700">{item}</span>) : <span className="text-xs text-slate-400">No categories selected</span>}</div></div>{accountType === "freelancer" && <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold text-slate-400">Starting from</p><p className="mt-1 text-2xl font-black">₹{startingPrice.toLocaleString("en-IN")}</p><p className="mt-1 text-xs text-slate-500">{portfolio.length} portfolio {portfolio.length === 1 ? "item" : "items"}</p></div>}</div></div></aside>
           </div>
 
-          <form onSubmit={handleSave}>
-            {/* ================= MAIN CARD ================= */}
-
-            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              {/* ================= PROFILE HEADER ================= */}
-
-              <div className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-br from-slate-950 via-indigo-950 to-blue-950 px-6 py-8 sm:px-9 sm:py-10">
-                <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-violet-500/20 blur-3xl" />
-
-                <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
-                  {/* Avatar */}
-
-                  <div className="relative shrink-0">
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt="Profile"
-                        className="h-28 w-28 rounded-3xl border-4 border-white/20 object-cover shadow-2xl"
-                      />
-                    ) : (
-                      <div className="flex h-28 w-28 items-center justify-center rounded-3xl border-4 border-white/10 bg-white/10 text-4xl font-black text-white shadow-2xl backdrop-blur">
-                        {fullName
-                          ? fullName.charAt(0).toUpperCase()
-                          : "Y"}
-                      </div>
-                    )}
-
-                    <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-slate-950 bg-emerald-400" />
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-300">
-                      Your YOUTENT Profile
-                    </p>
-
-                    <h2 className="mt-2 truncate text-2xl font-black text-white sm:text-3xl">
-                      {fullName || "Your Name"}
-                    </h2>
-
-                    <p className="mt-1 truncate text-sm text-slate-300">
-                      {email}
-                    </p>
-
-                    <label className="mt-4 inline-flex cursor-pointer items-center rounded-xl bg-white px-4 py-2.5 text-sm font-black text-slate-900 shadow-lg transition duration-300 hover:-translate-y-0.5 hover:bg-blue-50">
-                      {uploading
-                        ? "Uploading..."
-                        : avatarUrl
-                        ? "Change Photo"
-                        : "Upload Photo"}
-
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handleAvatarUpload}
-                        disabled={uploading}
-                        className="hidden"
-                      />
-                    </label>
-
-                    <p className="mt-2 text-xs text-slate-400">
-                      JPG, PNG or WEBP · Maximum 5MB
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* ================= FORM ================= */}
-
-              <div className="space-y-8 p-6 sm:p-9">
-                {/* ================= BASIC INFO ================= */}
-
-                <div>
-                  <div className="mb-5">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">
-                      Personal Information
-                    </p>
-
-                    <h3 className="mt-1 text-xl font-black text-slate-950">
-                      Basic details
-                    </h3>
-                  </div>
-
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    {/* Full Name */}
-
-                    <div>
-                      <label
-                        htmlFor="fullName"
-                        className="mb-2 block text-sm font-bold text-slate-800"
-                      >
-                        Full Name
-                      </label>
-
-                      <input
-                        id="fullName"
-                        type="text"
-                        value={fullName}
-                        onChange={(e) =>
-                          setFullName(e.target.value)
-                        }
-                        placeholder="Enter your full name"
-                        maxLength={100}
-                        required
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium outline-none transition duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                      />
-                    </div>
-
-                    {/* Username */}
-
-                    <div>
-                      <label
-                        htmlFor="username"
-                        className="mb-2 block text-sm font-bold text-slate-800"
-                      >
-                        Username
-                      </label>
-
-                      <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 transition duration-200 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-500/10">
-                        <span className="pl-4 text-sm font-bold text-slate-400">
-                          @
-                        </span>
-
-                        <input
-                          id="username"
-                          type="text"
-                          value={username}
-                          onChange={(e) =>
-                            setUsername(
-                              e.target.value
-                                .toLowerCase()
-                                .replace(/\s/g, "")
-                            )
-                          }
-                          placeholder="yourusername"
-                          maxLength={30}
-                          required
-                          className="w-full bg-transparent px-2 py-3.5 text-sm font-medium outline-none placeholder:text-slate-400"
-                        />
-                      </div>
-
-                      <p className="mt-2 text-xs text-slate-400">
-                        Lowercase letters, numbers and underscores only.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ================= ACCOUNT TYPE ================= */}
-
-                <div>
-                  <div className="mb-5">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">
-                      Account
-                    </p>
-
-                    <h3 className="mt-1 text-xl font-black text-slate-950">
-                      Your YOUTENT account type
-                    </h3>
-
-                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                      Your account type is securely managed and cannot be
-                      changed from this page.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {/* Client */}
-
-                    <div
-                      className={`relative overflow-hidden rounded-2xl border p-5 ${
-                        accountType === "client"
-                          ? "border-blue-500 bg-blue-50/70 shadow-lg shadow-blue-100"
-                          : "border-slate-200 bg-slate-50"
-                      }`}
-                    >
-                      {accountType === "client" && (
-                        <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">
-                          ✓
-                        </div>
-                      )}
-
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-xl">
-                        💼
-                      </div>
-
-                      <p className="mt-4 text-lg font-black text-slate-900">
-                        Client
-                      </p>
-
-                      <p className="mt-1 text-sm leading-6 text-slate-500">
-                        I want to hire creative professionals for my projects.
-                      </p>
-                    </div>
-
-                    {/* Freelancer */}
-
-                    <div
-                      className={`relative overflow-hidden rounded-2xl border p-5 ${
-                        accountType === "freelancer"
-                          ? "border-violet-500 bg-violet-50/70 shadow-lg shadow-violet-100"
-                          : "border-slate-200 bg-slate-50"
-                      }`}
-                    >
-                      {accountType === "freelancer" && (
-                        <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-xs font-black text-white">
-                          ✓
-                        </div>
-                      )}
-
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 text-xl">
-                        🎨
-                      </div>
-
-                      <p className="mt-4 text-lg font-black text-slate-900">
-                        Freelancer
-                      </p>
-
-                      <p className="mt-1 text-sm leading-6 text-slate-500">
-                        I want to offer my creative skills and services.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium leading-5 text-amber-700">
-                    Account type changes are restricted to protect your
-                    account and marketplace permissions.
-                  </div>
-                </div>
-
-                {/* ================= BIO ================= */}
-
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label
-                      htmlFor="bio"
-                      className="text-sm font-bold text-slate-800"
-                    >
-                      Bio
-                    </label>
-
-                    <span
-                      className={`text-xs font-bold ${
-                        bio.length >= 450
-                          ? "text-orange-500"
-                          : "text-slate-400"
-                      }`}
-                    >
-                      {bio.length}/500
-                    </span>
-                  </div>
-
-                  <textarea
-                    id="bio"
-                    value={bio}
-                    onChange={(e) =>
-                      setBio(e.target.value)
-                    }
-                    placeholder={
-                      accountType === "freelancer"
-                        ? "Tell clients about your experience, style and what you can create..."
-                        : "Tell creators about yourself and the kind of projects you work on..."
-                    }
-                    maxLength={500}
-                    rows={6}
-                    className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium leading-6 outline-none transition duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                  />
-                </div>
-
-                {/* ================= SKILLS ================= */}
-
-                <div>
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <label className="text-sm font-bold text-slate-800">
-                        Skills & Expertise
-                      </label>
-
-                      <p className="mt-1 text-xs text-slate-400">
-                        Select up to 5 skills that best describe you.
-                      </p>
-                    </div>
-
-                    <span className="text-xs font-black text-blue-600">
-                      {skills.length}/5 selected
-                    </span>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2.5">
-                    {availableSkills.map((skill) => {
-                      const selected = skills.includes(skill);
-
-                      return (
-                        <button
-                          key={skill}
-                          type="button"
-                          onClick={() => toggleSkill(skill)}
-                          className={`rounded-full border px-4 py-2.5 text-sm font-bold transition duration-200 ${
-                            selected
-                              ? "border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                              : "border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-                          }`}
-                        >
-                          {selected && (
-                            <span className="mr-1">✓</span>
-                          )}
-
-                          {skill}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* ================= MESSAGES ================= */}
-
-                {error && (
-                  <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 font-black">
-                      !
-                    </span>
-
-                    <p className="pt-0.5">{error}</p>
-                  </div>
-                )}
-
-                {success && (
-                  <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 font-black">
-                      ✓
-                    </span>
-
-                    <p className="pt-0.5">{success}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* ================= FOOTER ================= */}
-
-              <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 p-6 sm:flex-row sm:items-center sm:justify-between sm:px-9 sm:py-6">
-                <Link
-                  href="/dashboard"
-                  className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold text-slate-500 transition hover:bg-white hover:text-slate-900"
-                >
-                  Cancel
-                </Link>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/30 focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving ? (
-                    <>
-                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      Save Profile
-                      <span className="ml-2">→</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
+          {(error || success) && <div className={`rounded-2xl border p-4 text-sm font-bold ${error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{error || success}</div>}
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-end"><Link href="/dashboard" className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold text-slate-500 hover:bg-white">Cancel</Link><button disabled={saving} className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60">{saving ? "Saving..." : "Save Profile →"}</button></div>
+        </form>
       </section>
-
-      {/* ================= FOOTER ================= */}
-
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-4xl flex-col gap-2 px-5 py-7 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>
-            © {new Date().getFullYear()} YOUTENT. All rights reserved.
-          </p>
-
-          <p className="font-medium">
-            Where Talent Meets Opportunity
-          </p>
-        </div>
-      </footer>
     </main>
   );
+}
+
+function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {
+  return <div><label className="mb-2 block text-sm font-bold">{label}</label><input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10" /></div>;
 }

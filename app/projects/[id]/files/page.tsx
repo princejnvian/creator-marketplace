@@ -73,6 +73,42 @@ export default async function FilesPage({ params }: Props) {
 
   const isClient = project.client_id === user.id;
 
+  // Files are available only after the client has completed payment.
+  const { data: payment } = await supabase
+    .from("payments")
+    .select("status")
+    .eq("project_id", project.id)
+    .maybeSingle();
+
+  const paymentPaid = payment?.status === "paid";
+
+  if (!paymentPaid) {
+    return (
+      <main className="min-h-screen bg-slate-50 text-slate-900">
+        <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
+            <Link href="/dashboard" className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20">Y</div>
+              <div className="text-xl font-black tracking-tight">YOUTENT<span className="text-blue-600">.</span></div>
+            </Link>
+            <Link href={`/projects/${project.id}`} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 shadow-sm">← Back to Project</Link>
+          </div>
+        </nav>
+        <section className="mx-auto flex max-w-3xl px-5 py-16 sm:px-6">
+          <div className="w-full rounded-[28px] border border-violet-100 bg-gradient-to-br from-white to-violet-50/70 p-8 text-center shadow-xl shadow-slate-200/30 sm:p-12">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 text-2xl">🔒</div>
+            <p className="mt-6 text-xs font-black uppercase tracking-[0.16em] text-violet-600">Payment required</p>
+            <h1 className="mt-2 text-3xl font-black text-slate-950">Project files are locked</h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-500">
+              File sharing will be available after the client completes the project payment.
+            </p>
+            <Link href={`/projects/${project.id}`} className="mt-7 inline-flex rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/20">Back to Project</Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   // Get files from Supabase Storage
   const {
     data: files,

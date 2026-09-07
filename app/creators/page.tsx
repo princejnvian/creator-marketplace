@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import MarketplaceHeader from "@/components/MarketplaceHeader";
 
-export default async function CreatorsPage() {
+export default async function CreatorsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; service?: string }> }) {
   const supabase = await createClient();
 
   // Check logged-in user
@@ -14,56 +15,94 @@ export default async function CreatorsPage() {
     redirect("/login");
   }
 
-  // Get all freelancers
-  const { data: creators, error } = await supabase
+  const params = await searchParams;
+  const query = (params.q || "").trim().toLowerCase();
+  const category = (params.category || "").trim();
+  const service = (params.service || "").trim().toLowerCase();
+
+  // Get freelancers and apply marketplace discovery filters.
+  const { data: allCreators, error } = await supabase
     .from("profiles")
-    .select(
-      "id, full_name, username, bio, avatar_url, account_type, skills"
-    )
+    .select("id, full_name, username, bio, avatar_url, account_type, skills, categories, starting_price, portfolio")
     .eq("account_type", "freelancer")
     .order("created_at", { ascending: false });
 
+  // Backward-compatible discovery:
+  // Older freelancer profiles may not have the new `categories` field yet.
+  // Their skills still contain enough information to place them in a category.
+  const categoryRules: Record<string, string[]> = {
+    "Graphics & Design": [
+      "graphics", "graphic", "design", "thumbnail", "logo", "illustration",
+      "poster", "ui", "ux", "brand"
+    ],
+    "Video & Animation": [
+      "video", "editing", "editor", "shorts", "reels", "youtube",
+      "motion", "animation", "color grading", "intro", "outro"
+    ],
+    "Writing & Translation": [
+      "writing", "writer", "script", "copywriting", "content", "translation",
+      "proofreading", "storytelling", "research"
+    ],
+    "Music & Audio": [
+      "audio", "voice", "voice over", "podcast", "sound", "music",
+      "mixing", "mastering", "jingle"
+    ],
+    "Programming & Tech": [
+      "web", "development", "developer", "app", "next.js", "react",
+      "wordpress", "automation", "bug", "programming", "tech"
+    ],
+    "Digital Marketing": [
+      "marketing", "seo", "social media", "youtube marketing", "email",
+      "ads", "influencer", "analytics", "content strategy"
+    ],
+    "AI Services": [
+      "ai", "artificial intelligence", "prompt", "chatbot", "automation",
+      "ai content", "ai voice", "ai video", "ai image"
+    ],
+    "Photography": ["photography", "photographer", "photo", "portrait"],
+    "Business": ["business", "consulting", "strategy"],
+    "Finance": ["finance", "accounting", "bookkeeping"],
+  };
+
+  const normalize = (value: unknown) =>
+    String(value || "").trim().toLowerCase();
+
+  const creators = (allCreators || []).filter((creator) => {
+    const creatorCategories = Array.isArray(creator.categories)
+      ? creator.categories.map(normalize)
+      : [];
+    const creatorSkills = Array.isArray(creator.skills)
+      ? creator.skills.map(normalize)
+      : [];
+
+    const haystack = [
+      creator.full_name,
+      creator.username,
+      creator.bio,
+      ...creatorSkills,
+      ...creatorCategories,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    const wantedCategory = normalize(category);
+    const rules = categoryRules[category] || [];
+    const legacyCategoryMatch =
+      !wantedCategory ||
+      creatorCategories.includes(wantedCategory) ||
+      rules.some((rule) => haystack.includes(rule));
+
+    const queryMatch = !query || haystack.includes(query);
+    const serviceMatch = !service || haystack.includes(service);
+
+    return legacyCategoryMatch && queryMatch && serviceMatch;
+  });
+
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_8%_0%,rgba(59,130,246,.08),transparent_26rem),radial-gradient(circle_at_92%_8%,rgba(124,58,237,.07),transparent_24rem),#f7f9fc] text-slate-950">
 
-      {/* ================= NAVBAR ================= */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6 lg:px-8">
-
-          {/* Logo */}
-          <Link
-            href="/dashboard"
-            className="group flex items-center gap-3"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105 group-hover:rotate-3">
-              Y
-            </div>
-
-            <div className="text-xl font-black tracking-tight">
-              YOUTENT<span className="text-blue-600">.</span>
-            </div>
-          </Link>
-
-          {/* Navigation */}
-          <div className="flex items-center gap-2 sm:gap-3">
-
-            <Link
-              href="/dashboard"
-              className="rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition duration-200 hover:bg-slate-100 hover:text-slate-950 sm:px-4"
-            >
-              Dashboard
-            </Link>
-
-            <Link
-              href="/profile"
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 sm:px-4"
-            >
-              My Profile
-            </Link>
-
-          </div>
-        </div>
-      </nav>
+      <MarketplaceHeader accountType="client" />
 
       {/* ================= HERO / HEADER ================= */}
       <section className="relative overflow-hidden border-b border-slate-200 bg-white">
@@ -147,13 +186,10 @@ export default async function CreatorsPage() {
             </p>
           </div>
 
-          {creators && creators.length > 0 && (
-            <div className="inline-flex w-fit items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm">
-              <span className="mr-2 h-2 w-2 rounded-full bg-green-500" />
-              {creators.length}{" "}
-              {creators.length === 1 ? "creator" : "creators"} available
-            </div>
-          )}
+          <div className="inline-flex w-fit items-center rounded-full border border-slate-200 bg-white/85 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm backdrop-blur">
+            <span className={`mr-2 h-2 w-2 rounded-full ${creators.length ? "bg-emerald-500" : "bg-slate-300"}`} />
+            {creators.length} {creators.length === 1 ? "creator" : "creators"} found
+          </div>
 
         </div>
 
@@ -182,21 +218,26 @@ export default async function CreatorsPage() {
 
               const fullName = creator.full_name || "Creator";
 
-              const skills: string[] = Array.isArray(creator.skills)
-                ? creator.skills
-                : [];
+              const skills: string[] = Array.isArray(creator.skills) ? creator.skills : [];
+              const portfolio = Array.isArray(creator.portfolio) ? creator.portfolio : [];
 
               return (
 
                 <article
                   key={creator.id}
-                  className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-900/10"
+                  className="group relative overflow-hidden rounded-[1.7rem] border border-slate-200/90 bg-white/90 shadow-[0_18px_55px_-38px_rgba(15,23,42,.4)] backdrop-blur transition-all duration-300 hover:-translate-y-2 hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-900/10"
                 >
 
                   {/* Card gradient top */}
                   <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 opacity-80 transition-opacity duration-300 group-hover:opacity-100" />
 
                   <div className="p-6 sm:p-7">
+
+                    {portfolio.length > 0 && (
+                      <Link href={`/creators/${creator.username || creator.id}`} className="mb-5 block overflow-hidden rounded-2xl bg-slate-100">
+                        {portfolio[0]?.mediaType === "image" ? <img src={portfolio[0].url} alt={portfolio[0].title || "Portfolio sample"} className="h-48 w-full object-cover transition duration-300 group-hover:scale-[1.02]" /> : <div className="flex h-48 items-center justify-center text-sm font-bold text-slate-400">Portfolio sample • Open creator</div>}
+                      </Link>
+                    )}
 
                     {/* Profile header */}
                     <div className="flex items-start gap-4">
@@ -322,6 +363,11 @@ export default async function CreatorsPage() {
 
                     )}
 
+                  </div>
+
+                  <div className="mt-5 flex items-end justify-between border-t border-slate-100 pt-4">
+                    <div><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Starting from</p><p className="mt-1 text-xl font-black">₹{Number(creator.starting_price || 0).toLocaleString("en-IN")}</p></div>
+                    <span className="text-xs font-semibold text-slate-400">{portfolio.length} work {portfolio.length === 1 ? "sample" : "samples"}</span>
                   </div>
 
                   {/* Card footer */}

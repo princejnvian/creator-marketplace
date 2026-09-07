@@ -34,3 +34,24 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## YOUTENT Marketplace v3 flow
+
+The rebuild keeps the existing minimal YOUTENT visual language and adds a cleaner marketplace flow:
+
+- Client dashboard: service search + recommended creator/portfolio cards.
+- Creator discovery: portfolio-first cards, skills and starting price.
+- Creator profile: portfolio, categories, skills, packages, rating and direct pre-hire messaging.
+- Hire flow: project request → creator acceptance → payment page → verified payment → active project workspace.
+- Project workspace: requirements, project chat, private files and delivery workflow.
+- Delivery: submit → request revision → resubmit → client approval.
+- Completion: release workflow → freelancer wallet credit → client review.
+- Freelancer wallet: available/pending balance and transaction history.
+
+### Required database migration
+
+Run `marketplace-v3.sql` in Supabase SQL Editor after the existing marketplace SQL. It adds wallet, transaction, revision, review and pre-hire message tables plus the atomic payment-release function.
+
+### Payment / escrow note
+
+The application now models the marketplace escrow lifecycle in the database: captured payment is marked funded/held, and it is released to the freelancer wallet only after client delivery approval. Actual custody and payout to a freelancer's bank account still require the payment provider's supported marketplace/route/linked-account product and applicable KYC/compliance configuration. The wallet page therefore does not pretend to send real bank payouts until that provider integration is configured.

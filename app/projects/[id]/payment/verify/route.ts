@@ -333,19 +333,11 @@ export async function POST(
         )
         .digest("hex");
 
-   const generatedSignatureBuffer =
-  Buffer.from(generatedSignature, "utf8");
-
-const receivedSignatureBuffer =
-  Buffer.from(razorpaySignature, "utf8");
-
-const signatureIsValid =
-  generatedSignatureBuffer.length ===
-    receivedSignatureBuffer.length &&
-  crypto.timingSafeEqual(
-    generatedSignatureBuffer,
-    receivedSignatureBuffer
-  );
+    const generatedBuffer = Buffer.from(generatedSignature);
+    const receivedBuffer = Buffer.from(razorpaySignature);
+    const signatureIsValid =
+      generatedBuffer.length === receivedBuffer.length &&
+      crypto.timingSafeEqual(generatedBuffer, receivedBuffer);
 
     if (!signatureIsValid) {
       return NextResponse.json(
@@ -552,6 +544,28 @@ const signatureIsValid =
           }
         );
       }
+    }
+
+    // Payment is now captured. Activate the project workspace only after verification.
+    const { error: activateError } = await supabaseAdmin
+      .from("projects")
+      .update({ status: "active" })
+      .eq("id", project.id)
+      .eq("client_id", user.id)
+      .eq("status", "active");
+
+    if (activateError) {
+      console.error("Project activation error:", activateError);
+      return NextResponse.json({ error: "Payment verified but project activation failed" }, { status: 500 });
+    }
+
+    // Hold the captured amount in the freelancer's pending wallet once.
+    if (!existingPayment || existingPayment.status !== "paid") {
+      await supabaseAdmin.from("wallets").upsert({ user_id: project.freelancer_id }, { onConflict: "user_id", ignoreDuplicates: true });
+      const { data: wallet } = await supabaseAdmin.from("wallets").select("pending_balance").eq("user_id", project.freelancer_id).maybeSingle();
+      await supabaseAdmin.from("wallets").update({ pending_balance: Number(wallet?.pending_balance || 0) + projectAmount, updated_at: new Date().toISOString() }).eq("user_id", project.freelancer_id);
+      const { data: savedPayment } = await supabaseAdmin.from("payments").select("id").eq("project_id", project.id).maybeSingle();
+      if (savedPayment) await supabaseAdmin.from("wallet_transactions").insert({ user_id: project.freelancer_id, project_id: project.id, payment_id: savedPayment.id, type: "hold", amount: projectAmount, description: "Project payment held until client accepts delivery" });
     }
 
     // =========================================

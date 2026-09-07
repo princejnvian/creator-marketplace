@@ -58,8 +58,53 @@ export async function POST(request: Request) {
           )
           .map((skill: string) => skill.trim())
           .filter(Boolean)
-          .slice(0, 5)
+          .slice(0, 8)
       : [];
+
+    const categories = Array.isArray(body.categories)
+      ? body.categories
+          .filter(
+            (category: unknown): category is string =>
+              typeof category === "string"
+          )
+          .map((category: string) => category.trim())
+          .filter(Boolean)
+          .slice(0, 3)
+      : [];
+
+    const primaryCategory =
+      typeof body.primaryCategory === "string"
+        ? body.primaryCategory.trim()
+        : "";
+
+    const startingPrice =
+      body.startingPrice === null || body.startingPrice === undefined || body.startingPrice === ""
+        ? null
+        : Number(body.startingPrice);
+
+    const servicePackages =
+      Array.isArray(body.servicePackages)
+        ? body.servicePackages.slice(0, 3).map((item: any) => ({
+            id: typeof item?.id === "string" ? item.id : "",
+            name: typeof item?.name === "string" ? item.name.trim() : "",
+            description: typeof item?.description === "string" ? item.description.trim().slice(0, 500) : "",
+            price: Math.max(0, Number(item?.price) || 0),
+            deliveryDays: Math.max(1, Number(item?.deliveryDays) || 1),
+            revisions: Math.max(0, Number(item?.revisions) || 0),
+          }))
+        : [];
+
+    const portfolio =
+      Array.isArray(body.portfolio)
+        ? body.portfolio.slice(0, 12).map((item: any) => ({
+            id: typeof item?.id === "string" ? item.id : crypto.randomUUID(),
+            title: typeof item?.title === "string" ? item.title.trim().slice(0, 120) : "Portfolio work",
+            description: typeof item?.description === "string" ? item.description.trim().slice(0, 500) : "",
+            url: typeof item?.url === "string" ? item.url.trim() : "",
+            mediaType: item?.mediaType === "video" || item?.mediaType === "audio" ? item.mediaType : "image",
+            category: typeof item?.category === "string" ? item.category.trim().slice(0, 80) : "Creative Work",
+          }))
+        : [];
 
     // ================= VALIDATION =================
 
@@ -130,14 +175,35 @@ export async function POST(request: Request) {
       );
     }
 
-    if (skills.length > 5) {
+    if (skills.length > 8) {
       return NextResponse.json(
         {
-          error: "You can select up to 5 skills.",
+          error: "You can select up to 8 skills.",
         },
         {
           status: 400,
         }
+      );
+    }
+
+    if (categories.length > 3) {
+      return NextResponse.json(
+        { error: "You can select up to 3 categories." },
+        { status: 400 }
+      );
+    }
+
+    if (primaryCategory && !categories.includes(primaryCategory)) {
+      return NextResponse.json(
+        { error: "Primary category must be one of your selected categories." },
+        { status: 400 }
+      );
+    }
+
+    if (startingPrice !== null && (!Number.isFinite(startingPrice) || startingPrice < 0 || startingPrice > 10000000)) {
+      return NextResponse.json(
+        { error: "Starting price must be between ₹0 and ₹10,000,000." },
+        { status: 400 }
       );
     }
 
@@ -198,6 +264,13 @@ export async function POST(request: Request) {
       }
     }
 
+    if (accountType === "freelancer" && portfolio.some((item: any) => !item.url)) {
+      return NextResponse.json(
+        { error: "Every portfolio item must have a valid media URL." },
+        { status: 400 }
+      );
+    }
+
     // ================= UPDATE PROFILE =================
 
     const { data: updatedProfile, error: updateError } =
@@ -211,6 +284,11 @@ export async function POST(request: Request) {
             bio,
             account_type: accountType,
             skills,
+            categories: accountType === "freelancer" ? categories : [],
+            primary_category: accountType === "freelancer" ? primaryCategory || null : null,
+            starting_price: accountType === "freelancer" ? startingPrice : null,
+            service_packages: accountType === "freelancer" ? servicePackages : [],
+            portfolio: accountType === "freelancer" ? portfolio : [],
             avatar_url: avatarUrl,
             updated_at: new Date().toISOString(),
           },
@@ -219,7 +297,7 @@ export async function POST(request: Request) {
           }
         )
         .select(
-          "id, full_name, username, bio, account_type, skills, avatar_url"
+          "id, full_name, username, bio, account_type, skills, categories, primary_category, starting_price, service_packages, portfolio, avatar_url"
         )
         .single();
 

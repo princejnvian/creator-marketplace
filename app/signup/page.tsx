@@ -15,6 +15,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -24,6 +25,27 @@ export default function SignupPage() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const freelancerCategories = [
+    "Graphics & Design",
+    "Video & Animation",
+    "Writing & Translation",
+    "Music & Audio",
+    "Programming & Tech",
+    "Digital Marketing",
+    "AI Services",
+    "Photography",
+  ];
+
+  function toggleCategory(category: string) {
+    setSelectedCategories((current) =>
+      current.includes(category)
+        ? current.filter((item) => item !== category)
+        : current.length >= 3
+          ? current
+          : [...current, category]
+    );
+  }
 
   async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -46,6 +68,11 @@ export default function SignupPage() {
       return;
     }
 
+    if (accountType === "freelancer" && selectedCategories.length === 0) {
+      setError("Please choose at least one service category.");
+      return;
+    }
+
     setLoading(true);
 
     const { data, error } = await supabase.auth.signUp({
@@ -55,6 +82,8 @@ export default function SignupPage() {
         data: {
           full_name: fullName.trim(),
           account_type: accountType,
+          categories: accountType === "freelancer" ? selectedCategories : [],
+          primary_category: accountType === "freelancer" ? selectedCategories[0] || "" : "",
         },
       },
     });
@@ -300,6 +329,29 @@ export default function SignupPage() {
                     </button>
                   </div>
                 </div>
+
+                {accountType === "freelancer" && (
+                  <div className="mt-6 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 via-white to-violet-50/70 p-5 shadow-sm">
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-widest text-blue-600">Your services</p>
+                        <p className="mt-1 text-sm font-black text-slate-900">Choose your marketplace categories</p>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">Pick up to 3. You can add more details and skills after signup.</p>
+                      </div>
+                      <span className="text-xs font-black text-blue-600">{selectedCategories.length}/3</span>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      {freelancerCategories.map((category) => {
+                        const selected = selectedCategories.includes(category);
+                        return (
+                          <button key={category} type="button" onClick={() => toggleCategory(category)} className={`rounded-xl border px-3 py-3 text-left text-xs font-bold transition ${selected ? "border-blue-500 bg-blue-600 text-white shadow-md" : "border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50"}`}>
+                            {selected ? "✓ " : ""}{category}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Form */}
                 <form

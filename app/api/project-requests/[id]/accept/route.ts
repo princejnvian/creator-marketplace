@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 type Props = {
   params: Promise<{
@@ -11,88 +12,131 @@ export async function POST(
   request: Request,
   { params }: Props
 ) {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  // Logged-in user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.redirect(
-      new URL("/login", request.url)
-    );
-  }
-
-  const { id } = await params;
-
-  // Atomically accept the request and create the project.
-  // The PostgreSQL function handles locking and transaction safety.
-  const { error } = await supabase.rpc(
-    "accept_project_request",
-    {
-      p_request_id: id,
-    }
-  );
-
-  if (error) {
-    console.error(
-      "Accept project request error:",
-      error
-    );
-
-    if (
-      error.message.includes(
-        "Project request not found"
-      )
-    ) {
+    if (!user) {
       return NextResponse.json(
-        {
-          error: "Project request not found.",
-        },
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+
+    // Read through the user's authenticated session so the request
+    // itself is still protected by the normal marketplace RLS rules.
+    const { data: projectRequest, error: fetchError } =
+      await supabase
+        .from("project_requests")
+        .select(
+          "id, client_id, creator_id, project_title, description, service, budget, deadline, status"
+        )
+        .eq("id", id)
+        .maybeSingle();
+
+    if (fetchError || !projectRequest) {
+      return NextResponse.json(
+        { error: "Project request not found." },
         { status: 404 }
       );
     }
 
-    if (
-      error.message.includes(
-        "You are not allowed to accept this request"
-      )
-    ) {
+    if (projectRequest.creator_id !== user.id) {
       return NextResponse.json(
-        {
-          error:
-            "You are not allowed to accept this request.",
-        },
+        { error: "You are not allowed to accept this request." },
         { status: 403 }
       );
     }
 
-    if (
-      error.message.includes(
-        "This request has already been processed"
-      )
-    ) {
+    if (projectRequest.status !== "pending") {
       return NextResponse.json(
-        {
-          error:
-            "This request has already been processed.",
-        },
+        { error: "This request has already been processed." },
         { status: 400 }
       );
     }
 
+    /*
+     * Project creation is a protected server-side operation.
+     * The old flow used the user's RLS client for the projects INSERT,
+     * which caused:
+     * "new row violates row-level security policy for table projects".
+     *
+     * Use the service-role client only after the authenticated creator
+     * has been verified above. This keeps the browser unable to write
+     * projects directly while allowing this trusted server route to
+     * complete the accept flow.
+     */
+    const { data: project, error: projectError } = await supabaseAdmin
+      .from("projects")
+      .insert({
+        request_id: projectRequest.id,
+        client_id: projectRequest.client_id,
+        freelancer_id: projectRequest.creator_id,
+        title: projectRequest.project_title,
+        description: projectRequest.description,
+        budget: projectRequest.budget,
+        deadline: projectRequest.deadline,
+        status: "active",
+      })
+      .select("id")
+      .single();
+
+    if (projectError || !project) {
+      console.error("Project creation error:", projectError);
+
+      return NextResponse.json(
+        {
+          error:
+            projectError?.message ||
+            "Unable to create the project workspace.",
+        },
+        { status: 500 }
+      );
+    }
+
+    // Only mark the request accepted after the project exists.
+    const { error: updateError } = await supabaseAdmin
+      .from("project_requests")
+      .update({
+        status: "accepted",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("creator_id", user.id)
+      .eq("status", "pending");
+
+    if (updateError) {
+      console.error("Request acceptance update error:", updateError);
+
+      // Best-effort rollback so an accepted request cannot be left
+      // without its corresponding project.
+      await supabaseAdmin
+        .from("projects")
+        .delete()
+        .eq("id", project.id);
+
+      return NextResponse.json(
+        { error: "Unable to accept this request. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      projectId: project.id,
+      redirectTo: `/projects/${project.id}/payment`,
+    });
+  } catch (error) {
+    console.error("Accept request error:", error);
+
     return NextResponse.json(
-      {
-        error:
-          "Unable to accept the project request.",
-      },
+      { error: "Something went wrong while accepting this request." },
       { status: 500 }
     );
   }
-
-  // Redirect after successful acceptance
-  return NextResponse.redirect(
-    new URL("/requests", request.url)
-  );
 }

@@ -2,395 +2,328 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import HireForm from "./HireForm";
+import MarketplaceHeader from "@/components/MarketplaceHeader";
+import MessageCreatorButton from "./MessageCreatorButton";
 
-type Props = {
-  params: Promise<{
-    username: string;
-  }>;
+type PortfolioItem = {
+  id: string;
+  title: string;
+  description?: string;
+  url: string;
+  mediaType: "image" | "video" | "audio";
+  category?: string;
 };
 
-export default async function CreatorProfilePage({
-  params,
-}: Props) {
+type ServicePackage = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  deliveryDays: number;
+  revisions: number;
+};
+
+type Props = { params: Promise<{ username: string }> };
+
+export default async function CreatorProfilePage({ params }: Props) {
   const supabase = await createClient();
-
   const { username } = await params;
-
   const cleanUsername = username.toLowerCase();
 
-  // Find creator
-  const { data: creator, error } = await supabase
+  const { data: creator } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, username, bio, avatar_url, account_type, skills"
+      "id, full_name, username, bio, avatar_url, account_type, skills, categories, primary_category, starting_price, service_packages, portfolio"
     )
     .eq("username", cleanUsername)
     .eq("account_type", "freelancer")
     .maybeSingle();
 
-  if (error || !creator) {
-    notFound();
-  }
+  if (!creator) notFound();
 
   const fullName = creator.full_name || "Creator";
-  const skills: string[] = creator.skills || [];
+  const skills: string[] = Array.isArray(creator.skills) ? creator.skills : [];
+  const categories: string[] = Array.isArray(creator.categories) ? creator.categories : [];
+  const portfolio: PortfolioItem[] = Array.isArray(creator.portfolio) ? creator.portfolio : [];
+  const packages: ServicePackage[] = Array.isArray(creator.service_packages)
+    ? creator.service_packages
+    : [];
+
+  const startingPrice =
+    Number(creator.starting_price) || Number(packages[0]?.price) || 0;
+
+  const { data: reviewRows } = await supabase
+    .from("reviews")
+    .select("rating")
+    .eq("freelancer_id", creator.id);
+
+  const reviewCount = reviewRows?.length || 0;
+  const averageRating = reviewCount
+    ? (
+        reviewRows!.reduce((sum, item) => sum + Number(item.rating), 0) /
+        reviewCount
+      ).toFixed(1)
+    : "New";
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
+    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_8%_8%,rgba(59,130,246,.12),transparent_25rem),radial-gradient(circle_at_92%_12%,rgba(124,58,237,.10),transparent_26rem),linear-gradient(180deg,#f4f8ff_0%,#eef4fb_48%,#f8faff_100%)] text-slate-950">
+      <MarketplaceHeader accountType="client" />
 
-      {/* ================= NAVBAR ================= */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <Link
+          href="/creators"
+          className="inline-flex items-center rounded-full border border-slate-200/80 bg-white/75 px-3.5 py-2 text-sm font-bold text-slate-600 shadow-sm backdrop-blur transition hover:border-blue-200 hover:text-blue-600"
+        >
+          ← Back to Creators
+        </Link>
 
-          {/* Logo */}
-          <Link
-            href="/dashboard"
-            className="group flex items-center gap-2"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105">
-              Y
+        <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/80 bg-white/90 shadow-[0_24px_70px_-40px_rgba(30,64,175,.35),0_8px_24px_rgba(15,23,42,.06)] backdrop-blur-xl sm:rounded-[2rem]">
+          {/* Cover */}
+          <div className="relative h-36 overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 sm:h-44 md:h-48">
+            <div className="absolute -right-24 -top-28 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+            <div className="absolute -left-24 -bottom-40 h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
+            <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,.07)_45%,transparent_70%)]" />
+            <div className="absolute bottom-5 left-5 text-[10px] font-black uppercase tracking-[0.22em] text-white/75 sm:left-8 sm:text-xs">
+              YOUTENT CREATOR
             </div>
+          </div>
 
-            <div className="text-xl font-black tracking-tight">
-              YOUTENT<span className="text-blue-600">.</span>
+          {/* Creator identity */}
+          <div className="px-5 pb-6 sm:px-8 sm:pb-7 lg:px-10">
+            <div className="grid gap-5 pt-5 sm:grid-cols-[auto,minmax(0,1fr),auto] sm:items-center sm:gap-6">
+              <div className="relative mx-auto shrink-0 sm:mx-0">
+                {creator.avatar_url ? (
+                  <img
+                    src={creator.avatar_url}
+                    alt={fullName}
+                    className="h-28 w-28 rounded-[1.35rem] border-4 border-white object-cover shadow-xl ring-1 ring-slate-200 sm:h-32 sm:w-32"
+                  />
+                ) : (
+                  <div className="flex h-28 w-28 items-center justify-center rounded-[1.35rem] border-4 border-white bg-gradient-to-br from-blue-100 to-violet-100 text-4xl font-black text-blue-600 shadow-xl ring-1 ring-slate-200 sm:h-32 sm:w-32">
+                    {fullName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="absolute bottom-2 right-2 h-5 w-5 rounded-full border-4 border-white bg-emerald-500 shadow-sm" />
+              </div>
+
+              <div className="min-w-0 text-center sm:text-left">
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Available for projects
+                </span>
+                <h1 className="mt-3 truncate text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
+                  {fullName}
+                </h1>
+                <p className="mt-1 text-sm font-medium text-slate-500">
+                  @{creator.username}
+                </p>
+                <div className="mt-2 flex items-center justify-center gap-2 text-sm font-bold text-slate-700 sm:justify-start">
+                  <span className="text-amber-500">★</span>
+                  {averageRating}
+                  <span className="text-xs font-medium text-slate-400">
+                    ({reviewCount} reviews)
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
+                <MessageCreatorButton creatorId={creator.id} />
+                <HireForm creatorId={creator.id} creatorName={fullName} />
+              </div>
             </div>
-          </Link>
+          </div>
 
-          {/* Navigation */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Main content */}
+          <div className="border-t border-slate-100/90 bg-slate-50/35 px-5 py-7 sm:px-8 sm:py-9 lg:px-10">
+            <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_350px]">
+              <div className="min-w-0">
+                <section>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">
+                    About
+                  </p>
+                  <h2 className="mt-1 text-2xl font-black">
+                    {creator.primary_category ||
+                      categories[0] ||
+                      "Creative professional"}
+                  </h2>
+                  <p className="mt-3 max-w-3xl whitespace-pre-wrap text-[15px] leading-7 text-slate-600">
+                    {creator.bio || "This creator hasn't added a bio yet."}
+                  </p>
+                </section>
 
-            <Link
-              href="/creators"
-              className="hidden rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition duration-200 hover:bg-slate-100 hover:text-slate-950 sm:inline-flex"
-            >
-              Browse Creators
-            </Link>
+                {categories.length > 0 && (
+                  <section className="mt-8">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-600">
+                      Categories
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {categories.map((item) => (
+                        <span
+                          key={item}
+                          className="rounded-full border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
-            <Link
-              href="/dashboard"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition duration-200 hover:border-slate-300 hover:bg-slate-50"
-            >
-              Dashboard
-            </Link>
+                <section className="mt-8">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">
+                    Expertise
+                  </p>
+                  <h2 className="mt-1 text-2xl font-black">Skills & expertise</h2>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {skills.length ? (
+                      skills.map((item) => (
+                        <span
+                          key={item}
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm"
+                        >
+                          {item}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-slate-500">
+                        No skills added yet.
+                      </span>
+                    )}
+                  </div>
+                </section>
 
+                <section className="mt-10">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-600">
+                        Portfolio
+                      </p>
+                      <h2 className="mt-1 text-2xl font-black">Selected work</h2>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm">
+                      {portfolio.length} items
+                    </span>
+                  </div>
+
+                  {portfolio.length ? (
+                    <div className="mt-5 grid min-w-0 gap-4 sm:grid-cols-2">
+                      {portfolio.map((item) => (
+                        <article
+                          key={item.id}
+                          className="min-w-0 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_12px_32px_-24px_rgba(15,23,42,.35)] transition hover:-translate-y-0.5 hover:shadow-xl"
+                        >
+                          <div className="aspect-[16/10] bg-slate-100">
+                            {item.mediaType === "image" ? (
+                              <img
+                                src={item.url}
+                                alt={item.title}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : item.mediaType === "video" ? (
+                              <video
+                                src={item.url}
+                                controls
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center p-5">
+                                <audio
+                                  src={item.url}
+                                  controls
+                                  className="w-full"
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-4">
+                            <h3 className="truncate font-black">{item.title}</h3>
+                            {item.description && (
+                              <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                                {item.description}
+                              </p>
+                            )}
+                            <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-blue-600">
+                              {item.category || "Creative Work"}
+                            </p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white/70 p-8 text-center text-sm text-slate-500">
+                      Portfolio samples will appear here when this creator adds
+                      their work.
+                    </div>
+                  )}
+                </section>
+              </div>
+
+              {/* Pricing */}
+              <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
+                <div className="rounded-3xl border border-slate-200/90 bg-white/90 p-4 shadow-[0_18px_50px_-32px_rgba(15,23,42,.35)] backdrop-blur-xl sm:p-5">
+                  <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-violet-50 p-4">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-700">
+                      Service pricing
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">Starting from</p>
+                    <p className="text-4xl font-black tracking-tight">
+                      ₹{startingPrice.toLocaleString("en-IN")}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {packages.length ? (
+                      packages.map((item) => (
+                        <div
+                          key={item.id}
+                          className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="font-black">{item.name}</h3>
+                            <span className="shrink-0 text-lg font-black">
+                              ₹{Number(item.price).toLocaleString("en-IN")}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-xs leading-5 text-slate-500">
+                            {item.description}
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-slate-500">
+                            <span className="rounded-full bg-white px-2.5 py-1 shadow-sm">
+                              {item.deliveryDays} day delivery
+                            </span>
+                            <span className="rounded-full bg-white px-2.5 py-1 shadow-sm">
+                              {item.revisions} revisions
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-2xl bg-slate-50 p-4 text-xs text-slate-500">
+                        Custom pricing available through a project request.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 p-5 text-white shadow-[0_18px_35px_-20px_rgba(79,70,229,.55)]">
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/70">
+                      Ready to work together?
+                    </p>
+                    <p className="mt-2 text-sm font-semibold leading-6 text-white/95">
+                      Send a project request and discuss the exact scope.
+                    </p>
+                    <div className="mt-4">
+                      <HireForm
+                        creatorId={creator.id}
+                        creatorName={fullName}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            </div>
           </div>
         </div>
-      </nav>
-
-
-      {/* ================= HERO BACKGROUND ================= */}
-      <div className="relative overflow-hidden">
-
-        {/* Decorative glow */}
-        <div className="pointer-events-none absolute -left-40 top-10 h-80 w-80 rounded-full bg-blue-200/30 blur-3xl" />
-        <div className="pointer-events-none absolute -right-40 top-20 h-96 w-96 rounded-full bg-violet-200/30 blur-3xl" />
-
-        {/* ================= MAIN ================= */}
-        <section className="relative mx-auto max-w-6xl px-5 py-8 sm:px-6 sm:py-12 lg:px-8">
-
-          {/* Back */}
-          <Link
-            href="/creators"
-            className="group inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-500 transition duration-200 hover:bg-white hover:text-blue-600"
-          >
-            <span className="transition-transform duration-200 group-hover:-translate-x-1">
-              ←
-            </span>
-            Back to Creators
-          </Link>
-
-
-          {/* ================= PROFILE CARD ================= */}
-          <div className="mt-5 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_20px_70px_-30px_rgba(15,23,42,0.25)]">
-
-            {/* ================= COVER ================= */}
-            <div className="relative h-36 overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 sm:h-44">
-
-              {/* Decorative circles */}
-              <div className="absolute -right-10 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-              <div className="absolute -left-16 bottom-[-100px] h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-
-              <div className="absolute bottom-5 left-6 text-xs font-bold uppercase tracking-[0.2em] text-white/70 sm:left-10">
-                YOUTENT CREATOR
-              </div>
-
-            </div>
-
-
-            {/* ================= PROFILE HEADER ================= */}
-            <div className="relative px-6 pb-8 sm:px-10">
-
-              <div className="-mt-16 flex flex-col gap-6 sm:-mt-20 sm:flex-row sm:items-end">
-
-                {/* Avatar */}
-                <div className="relative shrink-0">
-
-                  {creator.avatar_url ? (
-                    <img
-                      src={creator.avatar_url}
-                      alt={fullName}
-                      className="h-32 w-32 rounded-3xl border-4 border-white object-cover shadow-xl sm:h-36 sm:w-36"
-                    />
-                  ) : (
-                    <div className="flex h-32 w-32 items-center justify-center rounded-3xl border-4 border-white bg-gradient-to-br from-blue-100 to-violet-100 text-5xl font-black text-blue-600 shadow-xl sm:h-36 sm:w-36">
-                      {fullName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-
-                  {/* Online indicator */}
-                  <span className="absolute bottom-2 right-2 flex h-5 w-5 items-center justify-center rounded-full border-4 border-white bg-emerald-500">
-                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                  </span>
-
-                </div>
-
-
-                {/* Name / Info */}
-                <div className="min-w-0 flex-1 pb-1">
-
-                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Available for projects
-                  </div>
-
-                  <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                    {fullName}
-                  </h1>
-
-                  {creator.username && (
-                    <p className="mt-1 text-sm font-medium text-slate-500">
-                      @{creator.username}
-                    </p>
-                  )}
-
-                </div>
-
-
-                {/* Hire */}
-                <div className="shrink-0">
-                  <HireForm
-                    creatorId={creator.id}
-                    creatorName={fullName}
-                  />
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* ================= CONTENT ================= */}
-            <div className="border-t border-slate-100 px-6 py-8 sm:px-10 sm:py-10">
-
-              <div className="grid gap-10 lg:grid-cols-[1fr_300px]">
-
-                {/* LEFT */}
-                <div>
-
-                  {/* About */}
-                  <section>
-
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                        ✦
-                      </div>
-
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
-                          About
-                        </p>
-
-                        <h2 className="text-xl font-black">
-                          About this creator
-                        </h2>
-                      </div>
-                    </div>
-
-                    <p className="mt-5 whitespace-pre-wrap text-[15px] leading-7 text-slate-600">
-                      {creator.bio ||
-                        "This creator hasn't added a bio yet."}
-                    </p>
-
-                  </section>
-
-
-                  {/* Skills */}
-                  <section className="mt-10">
-
-                    <div className="flex items-center gap-3">
-
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-                        ✦
-                      </div>
-
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-violet-600">
-                          Expertise
-                        </p>
-
-                        <h2 className="text-xl font-black">
-                          Skills & expertise
-                        </h2>
-                      </div>
-
-                    </div>
-
-
-                    {skills.length > 0 ? (
-
-                      <div className="mt-5 flex flex-wrap gap-2.5">
-
-                        {skills.map((skill) => (
-
-                          <span
-                            key={skill}
-                            className="rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-2.5 text-sm font-semibold text-blue-700 transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-100"
-                          >
-                            {skill}
-                          </span>
-
-                        ))}
-
-                      </div>
-
-                    ) : (
-
-                      <p className="mt-4 text-sm text-slate-500">
-                        No skills added yet.
-                      </p>
-
-                    )}
-
-                  </section>
-
-
-                  {/* Future features */}
-                  <section className="mt-10">
-
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6">
-
-                      <div className="flex gap-4">
-
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-lg shadow-sm">
-                          🚀
-                        </div>
-
-                        <div>
-
-                          <p className="font-bold text-slate-800">
-                            More creator features coming soon
-                          </p>
-
-                          <p className="mt-1.5 text-sm leading-6 text-slate-500">
-                            Portfolio, reviews, pricing, messaging and
-                            other creator tools will be available here.
-                          </p>
-
-                        </div>
-
-                      </div>
-
-                    </div>
-
-                  </section>
-
-                </div>
-
-
-                {/* ================= RIGHT SIDEBAR ================= */}
-                <aside>
-
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                      Creator status
-                    </p>
-
-                    <div className="mt-4 flex items-center gap-3">
-
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
-                        ✓
-                      </div>
-
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">
-                          Available
-                        </p>
-
-                        <p className="text-xs text-slate-500">
-                          Ready for new projects
-                        </p>
-                      </div>
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
-
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                      Why YOUTENT?
-                    </p>
-
-                    <div className="mt-4 space-y-4">
-
-                      <div className="flex gap-3">
-                        <span className="text-blue-600">✓</span>
-                        <p className="text-sm text-slate-600">
-                          Direct communication
-                        </p>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <span className="text-blue-600">✓</span>
-                        <p className="text-sm text-slate-600">
-                          Secure project payments
-                        </p>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <span className="text-blue-600">✓</span>
-                        <p className="text-sm text-slate-600">
-                          Simple project workflow
-                        </p>
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </aside>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* Bottom CTA */}
-          <div className="mt-8 rounded-3xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-violet-50 px-6 py-8 text-center sm:px-10">
-
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-              Ready to start?
-            </p>
-
-            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-              Have a project in mind?
-            </h2>
-
-            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
-              Connect with this creator and turn your idea into
-              something great.
-            </p>
-
-          </div>
-
-        </section>
-
-      </div>
-
+      </section>
     </main>
   );
 }
