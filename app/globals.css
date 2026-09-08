@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #eef3f9;
-  --foreground: #0f172a;
+  --background: #080d18;
+  --foreground: #f8fafc;
 }
 
 @theme inline {
@@ -12,77 +12,203 @@
   --font-mono: var(--font-geist-mono);
 }
 
-* {
-  box-sizing: border-box;
-}
-
+* { box-sizing: border-box; }
 html {
   scroll-behavior: smooth;
+  color-scheme: dark;
+  background: #080d18;
 }
-
 body {
   margin: 0;
   overflow-x: hidden;
+  min-height: 100vh;
   background:
-    radial-gradient(circle at 8% -5%, rgba(59,130,246,.12), transparent 28rem),
-    radial-gradient(circle at 92% 4%, rgba(124,58,237,.10), transparent 26rem),
-    linear-gradient(180deg, #f6f8fc 0%, #edf3f9 48%, #f4f7fb 100%);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    radial-gradient(circle at 8% -5%, rgba(59,130,246,.20), transparent 28rem),
+    radial-gradient(circle at 92% 4%, rgba(124,58,237,.18), transparent 30rem),
+    radial-gradient(circle at 50% 100%, rgba(14,165,233,.08), transparent 34rem),
+    repeating-linear-gradient(135deg, rgba(255,255,255,.018) 0, rgba(255,255,255,.018) 1px, transparent 1px, transparent 9px),
+    linear-gradient(180deg, #0b1220 0%, #080d18 52%, #0b1020 100%);
+  background-attachment: fixed;
+  color: #f8fafc;
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-.premium-card {
+::selection { background: rgba(59,130,246,.35); color: #fff; }
+
+/* The YOUTENT canvas is always dark. No light-theme state exists anymore. */
+main, section, article, header, nav, footer { color: inherit; }
+
+/* Neutral Tailwind surfaces -> premium dark surfaces. */
+.bg-white, .bg-white\/75, .bg-white\/80, .bg-white\/85, .bg-white\/88, .bg-white\/90, .bg-white\/95 {
+  background-color: #101827 !important;
+}
+.bg-slate-50, .bg-slate-50\/35, .bg-slate-50\/60, .bg-slate-50\/70, .bg-slate-50\/80, .bg-gray-50 {
+  background-color: #0c1422 !important;
+}
+.bg-slate-100, .bg-gray-100 { background-color: #172235 !important; }
+.bg-slate-200, .bg-gray-200 { background-color: #22314a !important; }
+.bg-slate-950, .bg-black { background-color: #050912 !important; }
+
+/* Light pastel utility surfaces used by older pages. */
+.bg-blue-50, .bg-blue-50\/40, .bg-blue-50\/50, .bg-blue-50\/60, .bg-blue-50\/70 { background-color: rgba(37,99,235,.14) !important; }
+.bg-indigo-50, .bg-indigo-50\/40, .bg-indigo-50\/50 { background-color: rgba(79,70,229,.14) !important; }
+.bg-violet-50, .bg-violet-50\/40, .bg-violet-50\/50 { background-color: rgba(124,58,237,.14) !important; }
+.bg-emerald-50, .bg-emerald-50\/50, .bg-green-50 { background-color: rgba(16,185,129,.12) !important; }
+.bg-amber-50, .bg-yellow-50 { background-color: rgba(245,158,11,.12) !important; }
+.bg-red-50, .bg-rose-50 { background-color: rgba(239,68,68,.12) !important; }
+
+/* Text: no dark text on the dark canvas. */
+.text-slate-950, .text-slate-900, .text-gray-950, .text-gray-900 { color: #f8fafc !important; }
+.text-slate-800, .text-slate-700, .text-gray-800, .text-gray-700 { color: #dbe7f5 !important; }
+.text-slate-600, .text-gray-600 { color: #b5c4d8 !important; }
+.text-slate-500, .text-gray-500 { color: #91a4bd !important; }
+.text-slate-400, .text-gray-400 { color: #7890ad !important; }
+
+/* Preserve intentional white text on primary/dark buttons and badges. */
+.text-white { color: #ffffff !important; }
+
+/* Borders stay visible without looking grey/washed out. */
+.border-slate-200, .border-slate-100, .border-gray-200, .border-gray-100, .border-slate-300, .border-gray-300 {
+  border-color: rgba(148,163,184,.20) !important;
+}
+.divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(148,163,184,.14) !important;
+}
+
+/* Cards */
+.premium-card, .glass-surface, .marketplace-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(226,232,240,.92);
-  border-radius: 1.5rem;
-  background: linear-gradient(145deg, rgba(255,255,255,.96), rgba(248,250,252,.86));
-  box-shadow:
-    0 28px 70px -34px rgba(30,41,59,.24),
-    0 8px 24px rgba(30,41,59,.055),
-    inset 0 1px 0 rgba(255,255,255,.95);
-  backdrop-filter: blur(18px);
+  border: 1px solid rgba(148,163,184,.20) !important;
+  border-radius: 1.35rem;
+  background: rgba(15,23,42,.94) !important;
+  box-shadow: 0 24px 65px -34px rgba(0,0,0,.72), 0 8px 24px rgba(0,0,0,.28) !important;
 }
 
-.premium-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(115deg, rgba(255,255,255,.62), transparent 28%, transparent 72%, rgba(99,102,241,.045)),
-    radial-gradient(circle at 15% 0%, rgba(59,130,246,.05), transparent 28%);
+/* Common card classes that were not using premium-card. */
+[class~="shadow-sm"], [class~="shadow-md"], [class~="shadow-lg"] {
+  --tw-shadow-color: rgba(0,0,0,.38);
 }
 
-.glass-surface {
-  background: rgba(255,255,255,.78);
-  border: 1px solid rgba(226,232,240,.82);
-  box-shadow: 0 24px 60px -34px rgba(30,41,59,.22), 0 6px 20px rgba(30,41,59,.045), inset 0 1px 0 rgba(255,255,255,.9);
-  backdrop-filter: blur(18px);
+/* Inputs, selects and textareas. */
+input, textarea, select {
+  color: #f8fafc !important;
+  background-color: #0d1626 !important;
+  border-color: rgba(148,163,184,.24) !important;
+  caret-color: #60a5fa;
+}
+input::placeholder, textarea::placeholder { color: #7890ad !important; opacity: 1; }
+select option { background: #0d1626 !important; color: #f8fafc !important; }
+input:focus, textarea:focus, select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.14) !important;
 }
 
+/* Header */
+header {
+  background: rgba(7,13,25,.94) !important;
+  border-color: rgba(148,163,184,.18) !important;
+  color: #f8fafc !important;
+}
+header a, header button { color: #dbe7f5 !important; }
+header a:hover, header button:hover { color: #ffffff !important; }
+header .bg-white { background: #0d1626 !important; }
+header input { background: #0d1626 !important; }
+
+/* Navbar secondary strip and dropdown menus. */
+header [class~="bg-white"] { background: #0d1626 !important; }
+header [class*="from-blue-50"], header [class*="from-indigo-50"], header [class*="from-violet-50"] {
+  background-image: linear-gradient(135deg, rgba(30,64,175,.28), rgba(79,70,229,.20), rgba(124,58,237,.22)) !important;
+}
+
+/* Buttons and interactive controls: crisp, high-contrast. */
+button { font-weight: 700; }
+.bg-blue-600 { background-color: #2563eb !important; }
+.bg-blue-700 { background-color: #1d4ed8 !important; }
+.bg-indigo-600 { background-color: #4f46e5 !important; }
+.bg-violet-600 { background-color: #7c3aed !important; }
+.hover\:bg-blue-600:hover { background-color: #3b82f6 !important; }
+
+/* Status / accent text remains bright. */
+.text-blue-600, .text-blue-700, .text-blue-500 { color: #60a5fa !important; }
+.text-indigo-600, .text-indigo-700 { color: #818cf8 !important; }
+.text-violet-600, .text-violet-700 { color: #a78bfa !important; }
+.text-emerald-600, .text-emerald-700 { color: #34d399 !important; }
+.text-amber-600, .text-amber-700 { color: #fbbf24 !important; }
+.text-red-600, .text-red-700 { color: #f87171 !important; }
+
+/* Pastel status surfaces -> dark tinted status surfaces. */
+.border-blue-100, .border-blue-200 { border-color: rgba(59,130,246,.34) !important; }
+.border-indigo-100, .border-indigo-200 { border-color: rgba(99,102,241,.34) !important; }
+.border-emerald-100, .border-emerald-200 { border-color: rgba(16,185,129,.34) !important; }
+.border-amber-100, .border-amber-200 { border-color: rgba(245,158,11,.34) !important; }
+.border-red-100, .border-red-200 { border-color: rgba(239,68,68,.34) !important; }
+
+/* Gradient panels containing white text remain vivid. */
+.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-b {
+  background-blend-mode: normal;
+}
+
+/* Profile / marketplace editor helper surfaces. */
+.theme-light-panel {
+  background: linear-gradient(135deg, #14254a, #1d2347, #2b1c4c) !important;
+  border-color: rgba(96,165,250,.28) !important;
+}
+.theme-light-panel .theme-panel-title { color: #ffffff !important; }
+.theme-light-panel .theme-panel-copy { color: #b9c8dc !important; }
+.theme-selection-card {
+  background: linear-gradient(135deg, #172b49, #1b2440) !important;
+  border-color: #3b82f6 !important;
+  color: #f8fafc !important;
+}
+.theme-selection-card .theme-selection-copy { color: #b9c8dc !important; }
+
+/* Page canvas helpers */
+.page-shell, .marketplace-page {
+  background: transparent !important;
+  color: #f8fafc !important;
+}
 .soft-grid {
   background-image:
-    linear-gradient(rgba(148,163,184,.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148,163,184,.055) 1px, transparent 1px);
+    linear-gradient(rgba(148,163,184,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148,163,184,.045) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
-::selection {
-  background: rgba(99,102,241,.18);
+/* My Requests: every white/pastel block is dark and readable. */
+.my-requests-page { color: #f8fafc !important; background: transparent !important; }
+.my-requests-page article,
+.my-requests-page .bg-white,
+.my-requests-page .bg-slate-50 {
+  background-color: #101827 !important;
+  color: #f8fafc !important;
+}
+.my-requests-page article > div:first-child {
+  background: linear-gradient(135deg, #121d31, #101827 55%, #111b31) !important;
+  border-color: rgba(148,163,184,.18) !important;
+}
+.my-requests-page .bg-blue-50\/60 {
+  background: rgba(37,99,235,.14) !important;
+  border-color: rgba(59,130,246,.32) !important;
+}
+.my-requests-page .bg-blue-50\/60 .text-blue-950 { color: #dbeafe !important; }
+.my-requests-page .bg-blue-50\/60 .text-blue-700 { color: #60a5fa !important; }
+
+/* No washed-out grey panels anywhere. */
+[class*="bg-gradient-to-r"][class*="from-slate-50"],
+[class*="bg-gradient-to-b"][class*="from-white"],
+[class*="bg-gradient-to-br"][class*="from-white"] {
+  background-image: linear-gradient(135deg, #121d31, #101827) !important;
 }
 
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #070c16; }
+::-webkit-scrollbar-thumb { background: #263752; border-radius: 999px; border: 2px solid #070c16; }
+::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
 
-.page-shell {
-  background:
-    radial-gradient(circle at 10% 0%, rgba(59,130,246,.10), transparent 28rem),
-    radial-gradient(circle at 90% 8%, rgba(124,58,237,.08), transparent 26rem),
-    linear-gradient(180deg, #f5f8fc 0%, #edf3f9 55%, #f7f9fc 100%);
-}
-
-.marketplace-card {
-  border: 1px solid rgba(203,213,225,.78);
-  background: rgba(255,255,255,.88);
-  box-shadow: 0 24px 65px -38px rgba(30,41,59,.25), 0 8px 22px rgba(30,41,59,.045);
-  backdrop-filter: blur(14px);
-}
+/* Prevent accidental horizontal overflow on marketplace screens. */
+html, body { max-width: 100%; }

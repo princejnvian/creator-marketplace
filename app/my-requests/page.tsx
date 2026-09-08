@@ -116,7 +116,7 @@ export default async function MyRequestsPage() {
     ).length || 0;
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="my-requests-page min-h-screen bg-slate-50 text-slate-900">
 
       {/* ================= NAVBAR ================= */}
 
@@ -179,7 +179,7 @@ export default async function MyRequestsPage() {
 
         <div className="pointer-events-none absolute -right-32 -top-20 h-72 w-72 rounded-full bg-indigo-200/25 blur-3xl" />
 
-        <div className="relative mx-auto max-w-7xl px-5 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="relative mx-auto max-w-7xl px-5 py-7 sm:px-6 sm:py-9 lg:px-8">
 
           <div className="max-w-3xl">
 
@@ -191,7 +191,7 @@ export default async function MyRequestsPage() {
 
             </div>
 
-            <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
 
               My Project{" "}
 
@@ -201,7 +201,7 @@ export default async function MyRequestsPage() {
 
             </h1>
 
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
               Track the project requests you have sent to creators
               and manage your ongoing work.
             </p>
@@ -214,15 +214,15 @@ export default async function MyRequestsPage() {
 
       {/* ================= MAIN ================= */}
 
-      <section className="mx-auto max-w-7xl px-5 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <section className="mx-auto max-w-7xl px-5 py-6 sm:px-6 sm:py-8 lg:px-8">
 
         {/* ================= STATS ================= */}
 
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
           {/* Total */}
 
-          <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+          <div className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
 
             <div className="flex items-start justify-between">
 
@@ -231,12 +231,12 @@ export default async function MyRequestsPage() {
                   Total Requests
                 </p>
 
-                <p className="mt-2 text-3xl font-black text-slate-950">
+                <p className="mt-1 text-2xl font-black text-slate-950">
                   {totalRequests}
                 </p>
               </div>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-lg">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-lg">
                 📋
               </div>
 
@@ -246,7 +246,7 @@ export default async function MyRequestsPage() {
 
           {/* Pending */}
 
-          <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+          <div className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
 
             <div className="flex items-start justify-between">
 
@@ -255,12 +255,12 @@ export default async function MyRequestsPage() {
                   Pending
                 </p>
 
-                <p className="mt-2 text-3xl font-black text-slate-950">
+                <p className="mt-1 text-2xl font-black text-slate-950">
                   {pendingRequests}
                 </p>
               </div>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-lg">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-lg">
                 ⏳
               </div>
 
@@ -270,7 +270,7 @@ export default async function MyRequestsPage() {
 
           {/* Accepted */}
 
-          <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+          <div className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
 
             <div className="flex items-start justify-between">
 
@@ -279,12 +279,12 @@ export default async function MyRequestsPage() {
                   Accepted
                 </p>
 
-                <p className="mt-2 text-3xl font-black text-slate-950">
+                <p className="mt-1 text-2xl font-black text-slate-950">
                   {acceptedRequests}
                 </p>
               </div>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-lg">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-lg">
                 ✓
               </div>
 
@@ -294,7 +294,7 @@ export default async function MyRequestsPage() {
 
           {/* Completed */}
 
-          <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+          <div className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
 
             <div className="flex items-start justify-between">
 
@@ -303,12 +303,12 @@ export default async function MyRequestsPage() {
                   Completed
                 </p>
 
-                <p className="mt-2 text-3xl font-black text-slate-950">
+                <p className="mt-1 text-2xl font-black text-slate-950">
                   {completedRequests}
                 </p>
               </div>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-lg">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-lg">
                 ✓
               </div>
 
@@ -435,12 +435,12 @@ export default async function MyRequestsPage() {
 
                 <article
                   key={request.id}
-                  className="group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-200/50"
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:border-slate-300 hover:shadow-lg"
                 >
 
                   {/* ================= CARD HEADER ================= */}
 
-                  <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-blue-50/40 p-5 sm:p-6">
+                  <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-blue-50/40 p-4 sm:p-5">
 
                     <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
@@ -453,12 +453,12 @@ export default async function MyRequestsPage() {
                           <img
                             src={creator.avatar_url}
                             alt={creatorName}
-                            className="h-14 w-14 rounded-2xl object-cover ring-4 ring-white shadow-sm"
+                            className="h-12 w-12 rounded-xl object-cover ring-2 ring-white shadow-sm"
                           />
 
                         ) : (
 
-                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-black text-white shadow-lg shadow-blue-600/20">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-black text-white shadow-lg shadow-blue-600/20">
                             {initial}
                           </div>
 
@@ -508,7 +508,7 @@ export default async function MyRequestsPage() {
 
                   {/* ================= CARD BODY ================= */}
 
-                  <div className="space-y-6 p-5 sm:p-6">
+                  <div className="space-y-4 p-4 sm:p-5">
 
                     {/* Project */}
 
@@ -518,7 +518,7 @@ export default async function MyRequestsPage() {
                         Project
                       </p>
 
-                      <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+                      <h3 className="mt-1 text-xl font-black tracking-tight text-slate-950">
                         {request.project_title}
                       </h3>
 
@@ -532,7 +532,7 @@ export default async function MyRequestsPage() {
                         Description
                       </p>
 
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-600">
+                      <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-600 line-clamp-3">
                         {request.description ||
                           "No description provided."}
                       </p>
@@ -541,11 +541,11 @@ export default async function MyRequestsPage() {
 
                     {/* ================= DETAILS ================= */}
 
-                    <div className="grid gap-4 border-t border-slate-100 pt-6 sm:grid-cols-3">
+                    <div className="grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-3">
 
                       {/* Service */}
 
-                      <div className="rounded-2xl bg-slate-50 p-4">
+                      <div className="rounded-xl bg-slate-50 p-3">
 
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                           Service
@@ -560,7 +560,7 @@ export default async function MyRequestsPage() {
 
                       {/* Budget */}
 
-                      <div className="rounded-2xl bg-slate-50 p-4">
+                      <div className="rounded-xl bg-slate-50 p-3">
 
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                           Budget
@@ -580,7 +580,7 @@ export default async function MyRequestsPage() {
 
                       {/* Deadline */}
 
-                      <div className="rounded-2xl bg-slate-50 p-4">
+                      <div className="rounded-xl bg-slate-50 p-3">
 
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                           Deadline
@@ -599,9 +599,9 @@ export default async function MyRequestsPage() {
 
                     {request.status === "accepted" && (
 
-                      <div className="border-t border-slate-100 pt-6">
+                      <div className="border-t border-slate-100 pt-4">
 
-                        <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
+                        <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
 
                           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
@@ -649,7 +649,7 @@ export default async function MyRequestsPage() {
 
                     {request.status === "declined" && (
 
-                      <div className="border-t border-slate-100 pt-6">
+                      <div className="border-t border-slate-100 pt-4">
 
                         <div className="rounded-2xl border border-red-100 bg-red-50/60 p-5">
 
@@ -671,7 +671,7 @@ export default async function MyRequestsPage() {
 
                     {request.status === "completed" && project && (
 
-                      <div className="border-t border-slate-100 pt-6">
+                      <div className="border-t border-slate-100 pt-4">
 
                         <Link
                           href={`/projects/${project.id}`}
@@ -690,7 +690,7 @@ export default async function MyRequestsPage() {
 
                           </div>
 
-                          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white font-bold text-emerald-700 shadow-sm">
+                          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white font-bold text-emerald-700 shadow-sm">
                             →
                           </span>
 

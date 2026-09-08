@@ -129,10 +129,10 @@ export default function MarketplaceHeader({
                         </div>
                       </div>
                     ))}
-                    <div className="rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 p-5">
+                    <div className="theme-light-panel rounded-2xl border border-transparent bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 p-5">
                       <p className="text-xs font-black uppercase tracking-wider text-blue-700">Explore</p>
-                      <p className="mt-2 text-sm font-black text-slate-900">{category.label}</p>
-                      <p className="mt-2 text-xs leading-5 text-slate-500">Find creators, compare skills and start a project.</p>
+                      <p className="theme-panel-title mt-2 text-sm font-black text-slate-900">{category.label}</p>
+                      <p className="theme-panel-copy mt-2 text-xs leading-5 text-slate-500">Find creators, compare skills and start a project.</p>
                       <Link href={category.href} className="mt-4 inline-flex rounded-lg bg-slate-950 px-3.5 py-2 text-xs font-black text-white transition hover:bg-blue-600">Browse →</Link>
                     </div>
                   </div>

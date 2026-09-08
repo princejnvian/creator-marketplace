@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import HireForm from "./HireForm";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 import MessageCreatorButton from "./MessageCreatorButton";
+import PortfolioLightbox from "./PortfolioLightbox";
 
 type PortfolioItem = {
   id: string;
@@ -25,12 +26,50 @@ type ServicePackage = {
 
 type Props = { params: Promise<{ username: string }> };
 
+export async function generateMetadata({ params }: Props) {
+  const { username } = await params;
+  const cleanUsername = username.toLowerCase();
+  const { data: creator } = await supabaseAdmin
+    .from("profiles")
+    .select("full_name, username, bio, avatar_url, primary_category, categories")
+    .eq("username", cleanUsername)
+    .eq("account_type", "freelancer")
+    .maybeSingle();
+
+  if (!creator) {
+    return {
+      title: "Creator Not Found | YOUTENT",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const name = creator.full_name || creator.username || "Creator";
+  const categories = Array.isArray(creator.categories) ? creator.categories : [];
+  const specialty = creator.primary_category || categories[0] || "Freelance creative services";
+  const description = String(creator.bio || `${name} offers ${specialty} services on YOUTENT.`).replace(/\s+/g, " ").trim().slice(0, 155);
+  const canonical = `/creators/${encodeURIComponent(String(creator.username || cleanUsername))}`;
+
+  return {
+    title: `${name} — ${specialty} | YOUTENT`,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: `${name} — ${specialty} | YOUTENT`,
+      description,
+      url: canonical,
+      siteName: "YOUTENT",
+      type: "profile",
+      ...(creator.avatar_url ? { images: [{ url: creator.avatar_url, alt: name }] } : {}),
+    },
+    robots: { index: true, follow: true },
+  };
+}
+
 export default async function CreatorProfilePage({ params }: Props) {
-  const supabase = await createClient();
   const { username } = await params;
   const cleanUsername = username.toLowerCase();
 
-  const { data: creator } = await supabase
+  const { data: creator } = await supabaseAdmin
     .from("profiles")
     .select(
       "id, full_name, username, bio, avatar_url, account_type, skills, categories, primary_category, starting_price, service_packages, portfolio"
@@ -52,7 +91,7 @@ export default async function CreatorProfilePage({ params }: Props) {
   const startingPrice =
     Number(creator.starting_price) || Number(packages[0]?.price) || 0;
 
-  const { data: reviewRows } = await supabase
+  const { data: reviewRows } = await supabaseAdmin
     .from("reviews")
     .select("rating")
     .eq("freelancer_id", creator.id);
@@ -65,8 +104,21 @@ export default async function CreatorProfilePage({ params }: Props) {
       ).toFixed(1)
     : "New";
 
+  const creatorUrl = `https://youtent.in/creators/${encodeURIComponent(String(creator.username))}`;
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: fullName,
+    url: creatorUrl,
+    ...(creator.avatar_url ? { image: creator.avatar_url } : {}),
+    description: creator.bio || undefined,
+    jobTitle: creator.primary_category || categories[0] || "Freelancer",
+    ...(reviewCount > 0 ? { aggregateRating: { "@type": "AggregateRating", ratingValue: Number(averageRating), reviewCount } } : {}),
+  };
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_8%_8%,rgba(59,130,246,.12),transparent_25rem),radial-gradient(circle_at_92%_12%,rgba(124,58,237,.10),transparent_26rem),linear-gradient(180deg,#f4f8ff_0%,#eef4fb_48%,#f8faff_100%)] text-slate-950">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <MarketplaceHeader accountType="client" />
 
       <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
@@ -77,7 +129,7 @@ export default async function CreatorProfilePage({ params }: Props) {
           ← Back to Creators
         </Link>
 
-        <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/80 bg-white/90 shadow-[0_24px_70px_-40px_rgba(30,64,175,.35),0_8px_24px_rgba(15,23,42,.06)] backdrop-blur-xl sm:rounded-[2rem]">
+        <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/80 bg-white shadow-[0_24px_70px_-40px_rgba(30,64,175,.35),0_8px_24px_rgba(15,23,42,.06)] sm:rounded-[2rem]">
           {/* Cover */}
           <div className="relative h-36 overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 sm:h-44 md:h-48">
             <div className="absolute -right-24 -top-28 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
@@ -206,51 +258,9 @@ export default async function CreatorProfilePage({ params }: Props) {
                   </div>
 
                   {portfolio.length ? (
-                    <div className="mt-5 grid min-w-0 gap-4 sm:grid-cols-2">
-                      {portfolio.map((item) => (
-                        <article
-                          key={item.id}
-                          className="min-w-0 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_12px_32px_-24px_rgba(15,23,42,.35)] transition hover:-translate-y-0.5 hover:shadow-xl"
-                        >
-                          <div className="aspect-[16/10] bg-slate-100">
-                            {item.mediaType === "image" ? (
-                              <img
-                                src={item.url}
-                                alt={item.title}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : item.mediaType === "video" ? (
-                              <video
-                                src={item.url}
-                                controls
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center p-5">
-                                <audio
-                                  src={item.url}
-                                  controls
-                                  className="w-full"
-                                />
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-4">
-                            <h3 className="truncate font-black">{item.title}</h3>
-                            {item.description && (
-                              <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
-                                {item.description}
-                              </p>
-                            )}
-                            <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-blue-600">
-                              {item.category || "Creative Work"}
-                            </p>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
+                    <PortfolioLightbox items={portfolio} />
                   ) : (
-                    <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white/70 p-8 text-center text-sm text-slate-500">
+                    <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
                       Portfolio samples will appear here when this creator adds
                       their work.
                     </div>
@@ -260,7 +270,7 @@ export default async function CreatorProfilePage({ params }: Props) {
 
               {/* Pricing */}
               <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
-                <div className="rounded-3xl border border-slate-200/90 bg-white/90 p-4 shadow-[0_18px_50px_-32px_rgba(15,23,42,.35)] backdrop-blur-xl sm:p-5">
+                <div className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-[0_18px_50px_-32px_rgba(15,23,42,.35)] sm:p-5">
                   <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-violet-50 p-4">
                     <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-700">
                       Service pricing

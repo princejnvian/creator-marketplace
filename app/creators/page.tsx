@@ -1,27 +1,21 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 
+export const metadata = {
+  title: "Find Creators & Freelancers | YOUTENT",
+  description: "Discover talented video editors, thumbnail designers, voice-over artists, developers, writers, and other creative professionals on YOUTENT.",
+  alternates: { canonical: "/creators" },
+};
+
 export default async function CreatorsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; service?: string }> }) {
-  const supabase = await createClient();
-
-  // Check logged-in user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
   const params = await searchParams;
   const query = (params.q || "").trim().toLowerCase();
   const category = (params.category || "").trim();
   const service = (params.service || "").trim().toLowerCase();
 
   // Get freelancers and apply marketplace discovery filters.
-  const { data: allCreators, error } = await supabase
+  const { data: allCreators, error } = await supabaseAdmin
     .from("profiles")
     .select("id, full_name, username, bio, avatar_url, account_type, skills, categories, starting_price, portfolio")
     .eq("account_type", "freelancer")
@@ -212,183 +206,119 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
         {/* ================= CREATOR GRID ================= */}
         {creators && creators.length > 0 ? (
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
 
             {creators.map((creator) => {
-
               const fullName = creator.full_name || "Creator";
-
               const skills: string[] = Array.isArray(creator.skills) ? creator.skills : [];
               const portfolio = Array.isArray(creator.portfolio) ? creator.portfolio : [];
+              const creatorUrl = `/creators/${creator.username || creator.id}`;
 
               return (
-
                 <article
                   key={creator.id}
-                  className="group relative overflow-hidden rounded-[1.7rem] border border-slate-200/90 bg-white/90 shadow-[0_18px_55px_-38px_rgba(15,23,42,.4)] backdrop-blur transition-all duration-300 hover:-translate-y-2 hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-900/10"
+                  className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,.45)] transition-all duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_18px_38px_-24px_rgba(37,99,235,.35)]"
                 >
+                  <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600" />
 
-                  {/* Card gradient top */}
-                  <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 opacity-80 transition-opacity duration-300 group-hover:opacity-100" />
-
-                  <div className="p-6 sm:p-7">
-
-                    {portfolio.length > 0 && (
-                      <Link href={`/creators/${creator.username || creator.id}`} className="mb-5 block overflow-hidden rounded-2xl bg-slate-100">
-                        {portfolio[0]?.mediaType === "image" ? <img src={portfolio[0].url} alt={portfolio[0].title || "Portfolio sample"} className="h-48 w-full object-cover transition duration-300 group-hover:scale-[1.02]" /> : <div className="flex h-48 items-center justify-center text-sm font-bold text-slate-400">Portfolio sample • Open creator</div>}
-                      </Link>
-                    )}
-
-                    {/* Profile header */}
-                    <div className="flex items-start gap-4">
-
-                      {/* Avatar */}
+                  <div className="p-4 sm:p-5">
+                    {/* Creator identity */}
+                    <div className="flex items-center gap-3">
                       <div className="relative shrink-0">
-
                         {creator.avatar_url ? (
-
                           <img
                             src={creator.avatar_url}
                             alt={fullName}
-                            className="h-20 w-20 rounded-2xl object-cover shadow-md ring-4 ring-slate-50 transition duration-300 group-hover:scale-105"
+                            className="h-12 w-12 rounded-xl object-cover ring-2 ring-slate-100"
                           />
-
                         ) : (
-
-                          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-600 to-violet-600 text-2xl font-black text-white shadow-md transition duration-300 group-hover:scale-105">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 text-lg font-black text-white">
                             {fullName.charAt(0).toUpperCase()}
                           </div>
-
                         )}
-
-                        {/* Online indicator */}
-                        <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-4 border-white bg-green-500">
-                          <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                        </span>
-
+                        <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500" />
                       </div>
 
-                      {/* Name */}
                       <div className="min-w-0 flex-1">
-
-                        <div className="flex items-center gap-2">
-
-                          <h2 className="truncate text-lg font-extrabold text-slate-950">
-                            {fullName}
-                          </h2>
-
-                          <span
-                            title="Freelancer"
-                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-black text-blue-600"
-                          >
-                            ✓
-                          </span>
-
+                        <div className="flex items-center gap-1.5">
+                          <h2 className="truncate text-base font-extrabold text-slate-950">{fullName}</h2>
+                          <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[9px] font-black text-blue-600">✓</span>
                         </div>
-
-                        {creator.username && (
-                          <p className="mt-1 truncate text-sm text-slate-500">
-                            @{creator.username}
-                          </p>
-                        )}
-
-                        <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-bold text-green-700">
-                          <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                          Available
-                        </div>
-
+                        {creator.username && <p className="truncate text-xs text-slate-500">@{creator.username}</p>}
                       </div>
 
-                    </div>
-
-                    {/* Divider */}
-                    <div className="my-6 h-px bg-slate-100" />
-
-                    {/* Bio */}
-                    <div>
-
-                      <p className="line-clamp-3 min-h-[72px] text-sm leading-6 text-slate-600">
-                        {creator.bio ||
-                          "This creator hasn't added a bio yet. Check their profile to learn more about their skills and experience."}
-                      </p>
-
-                    </div>
-
-                    {/* Skills */}
-                    {skills.length > 0 ? (
-
-                      <div className="mt-5">
-
-                        <div className="mb-2.5 flex items-center justify-between">
-                          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                            Skills
-                          </p>
-
-                          <span className="text-xs text-slate-400">
-                            {skills.length}{" "}
-                            {skills.length === 1 ? "skill" : "skills"}
-                          </span>
-                        </div>
-
-                        <div className="flex min-h-[52px] flex-wrap content-start gap-2">
-
-                          {skills.slice(0, 5).map((skill) => (
-
-                            <span
-                              key={skill}
-                              className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition duration-200 group-hover:border-blue-200"
-                            >
-                              {skill}
-                            </span>
-
-                          ))}
-
-                          {skills.length > 5 && (
-                            <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-500">
-                              +{skills.length - 5} more
-                            </span>
-                          )}
-
-                        </div>
-
-                      </div>
-
-                    ) : (
-
-                      <div className="mt-5 min-h-[52px]">
-                        <p className="text-xs text-slate-400">
-                          Skills not added yet
-                        </p>
-                      </div>
-
-                    )}
-
-                  </div>
-
-                  <div className="mt-5 flex items-end justify-between border-t border-slate-100 pt-4">
-                    <div><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Starting from</p><p className="mt-1 text-xl font-black">₹{Number(creator.starting_price || 0).toLocaleString("en-IN")}</p></div>
-                    <span className="text-xs font-semibold text-slate-400">{portfolio.length} work {portfolio.length === 1 ? "sample" : "samples"}</span>
-                  </div>
-
-                  {/* Card footer */}
-                  <div className="border-t border-slate-100 bg-slate-50/70 p-4 transition duration-300 group-hover:bg-blue-50/40">
-
-                    <Link
-                      href={`/creators/${creator.username || creator.id}`}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-slate-950/10 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-600 hover:shadow-blue-600/20"
-                    >
-                      View Profile
-                      <span className="text-base transition-transform duration-300 group-hover:translate-x-1">
-                        →
+                      <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
+                        Available
                       </span>
+                    </div>
+
+                    {/* Compact portfolio strip: four items in one row */}
+                    <Link href={creatorUrl} className="mt-4 block">
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {Array.from({ length: 4 }).map((_, index) => {
+                          const item = portfolio[index];
+                          return (
+                            <div key={index} className="min-w-0">
+                              <div className="aspect-[4/3] overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                                {item?.mediaType === "image" && item?.url ? (
+                                  <img
+                                    src={item.url}
+                                    alt={item.title || `Portfolio ${index + 1}`}
+                                    className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+                                  />
+                                ) : item ? (
+                                  <div className="flex h-full items-center justify-center bg-slate-900 px-1 text-center text-[9px] font-bold text-white">
+                                    {item.mediaType === "video" ? "VIDEO" : item.mediaType === "audio" ? "AUDIO" : "WORK"}
+                                  </div>
+                                ) : (
+                                  <div className="flex h-full items-center justify-center text-[10px] font-semibold text-slate-400">—</div>
+                                )}
+                              </div>
+                              <p className="mt-1 line-clamp-2 min-h-[24px] text-[10px] font-semibold leading-3 text-slate-700">
+                                {item?.title || (item ? "Portfolio work" : "")}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </Link>
 
+                    {/* Service + bio */}
+                    <div className="mt-3 border-t border-slate-100 pt-3">
+                      <p className="line-clamp-2 min-h-[36px] text-xs leading-5 text-slate-500">
+                        {creator.bio || "Creative professional ready to help with your project."}
+                      </p>
+
+                      {skills.length > 0 && (
+                        <div className="mt-2 flex min-h-[25px] flex-wrap gap-1.5">
+                          {skills.slice(0, 4).map((skill) => (
+                            <span key={skill} className="rounded-md bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">
+                              {skill}
+                            </span>
+                          ))}
+                          {skills.length > 4 && (
+                            <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-500">+{skills.length - 4}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
+                  {/* Price + action */}
+                  <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-4 py-3 sm:px-5">
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Starting from</p>
+                      <p className="text-lg font-black text-slate-950">₹{Number(creator.starting_price || 0).toLocaleString("en-IN")}</p>
+                    </div>
+                    <Link
+                      href={creatorUrl}
+                      className="shrink-0 rounded-lg bg-slate-950 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-blue-600"
+                    >
+                      View & Hire →
+                    </Link>
+                  </div>
                 </article>
-
               );
-
             })}
 
           </div>

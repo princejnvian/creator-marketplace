@@ -55,3 +55,9 @@ Run `marketplace-v3.sql` in Supabase SQL Editor after the existing marketplace S
 ### Payment / escrow note
 
 The application now models the marketplace escrow lifecycle in the database: captured payment is marked funded/held, and it is released to the freelancer wallet only after client delivery approval. Actual custody and payout to a freelancer's bank account still require the payment provider's supported marketplace/route/linked-account product and applicable KYC/compliance configuration. The wallet page therefore does not pretend to send real bank payouts until that provider integration is configured.
+
+## YOUTENT v8 UI updates
+- Fixed controlled numeric price inputs so values can be fully cleared with Backspace instead of snapping back to 0.
+- Added persistent Light/Dark theme toggle in the marketplace header. Dark is the default and uses a subtle textured gradient background.
+- Added freelancer wallet summary to the profile preview with available and pending balances and a Wallet link.
+- Preserved the existing marketplace payment, requests, files, delivery, review, and portfolio lightbox flows.
