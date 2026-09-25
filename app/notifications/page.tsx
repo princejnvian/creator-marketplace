@@ -1,3 +1,4 @@
+import YoutentLogo from "@/components/YoutentLogo";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";

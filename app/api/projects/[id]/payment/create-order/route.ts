@@ -72,6 +72,8 @@ export async function POST(request: Request) {
     }
 
     const amount = Number(project.budget);
+    const platformFee = 50;
+    const totalAmount = amount + platformFee;
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json(
@@ -104,7 +106,7 @@ export async function POST(request: Request) {
     });
 
     const amountInPaise = Math.round(
-      amount * 100
+      totalAmount * 100
     );
 
     const order = await razorpay.orders.create({
@@ -115,6 +117,8 @@ export async function POST(request: Request) {
         project_id: project.id,
         client_id: project.client_id,
         freelancer_id: project.freelancer_id,
+        project_amount: amount.toFixed(2),
+        platform_fee: platformFee.toFixed(2),
       },
     });
 
@@ -125,6 +129,9 @@ export async function POST(request: Request) {
       currency: order.currency,
       keyId,
       projectId: project.id,
+      projectAmount: amount,
+      platformFee,
+      totalAmount,
     });
   } catch (error) {
     console.error(

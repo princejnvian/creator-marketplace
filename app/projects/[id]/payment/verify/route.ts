@@ -487,6 +487,7 @@ export async function POST(
       amount: totalAmount,
       project_amount: projectAmount,
       platform_fee: platformFee,
+      escrow_status: "funded",
       currency: "INR",
       status: "paid",
       payment_gateway: "razorpay",

@@ -17,6 +17,24 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  async function handleGoogleSignIn() {
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+  }
+
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -336,16 +354,12 @@ export default function LoginPage() {
               {/* Google */}
               <button
                 type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 font-bold text-slate-400"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <span className="text-lg font-black">G</span>
-
+                <span className="flex h-5 w-5 items-center justify-center rounded-full text-base font-black text-[#4285F4]">G</span>
                 <span>Continue with Google</span>
-
-                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-                  Soon
-                </span>
               </button>
 
               {/* Signup */}

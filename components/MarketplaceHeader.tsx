@@ -1,4 +1,5 @@
 import Link from "next/link";
+import YoutentLogo from "@/components/YoutentLogo";
 import MarketplaceNavActions from "./MarketplaceNavActions";
 
 type Category = {
@@ -72,16 +73,10 @@ export default function MarketplaceHeader({
   accountType?: "client" | "freelancer";
 }) {
   return (
-    <header className="sticky top-0 z-[80] border-b border-slate-200/80 bg-white/88 shadow-[0_8px_35px_-28px_rgba(15,23,42,.45)] backdrop-blur-2xl">
+    <header className="sticky top-0 z-[80] border-b border-slate-200/80 bg-slate-50/92 shadow-[0_8px_35px_-28px_rgba(15,23,42,.45)] backdrop-blur-2xl">
       <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-4 px-4 sm:px-5 lg:px-8">
         <Link href="/dashboard" className="group flex shrink-0 items-center gap-2.5">
-          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-visible">
-            <img
-              src="/youtent-logo-3d.svg"
-              alt="YOUTENT"
-              className="h-10 w-10 object-contain"
-            />
-          </span>
+          <YoutentLogo className="h-10 w-10 shrink-0" priority />
           <span className="hidden text-[21px] font-black tracking-[-0.045em] text-slate-950 sm:block">
             YOUTENT<span className="text-blue-600">.</span>
           </span>
@@ -100,7 +95,7 @@ export default function MarketplaceHeader({
         </nav>
       </div>
 
-      <div className="hidden border-t border-slate-100 bg-white md:block">
+      <div className="hidden border-t border-slate-100 bg-slate-50/88 md:block">
         <div className="mx-auto flex h-11 max-w-[1440px] items-center gap-0.5 overflow-visible px-4 lg:px-8">
           <Link href="/creators" className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-bold text-slate-700 transition hover:bg-slate-50">Trending 🔥</Link>
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import YoutentLogo from "@/components/YoutentLogo";
 import type { ReactNode } from "react";
 
 type Props = {
@@ -29,13 +30,7 @@ export default function MarketplaceNav({ accountType = "client", active }: Props
     <header className="marketplace-header">
       <div className="marketplace-header-main">
         <Link href="/dashboard" className="marketplace-brand" aria-label="YOUTENT Dashboard">
-          <span className="marketplace-brand-mark marketplace-brand-mark-image">
-            <img
-              src="/youtent-logo-3d.svg"
-              alt="YOUTENT"
-              className="h-full w-full object-contain"
-            />
-          </span>
+          <YoutentLogo className="h-10 w-10 shrink-0" priority />
           <span>YOUTENT<span className="marketplace-brand-dot">.</span></span>
         </Link>
 

@@ -1,3 +1,4 @@
+import YoutentLogo from "@/components/YoutentLogo";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -20,12 +21,7 @@ export default async function MessagesPage() {
       <nav className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
 
-          <Link
-            href="/dashboard"
-            className="text-2xl font-extrabold tracking-tight"
-          >
-            YOUTENT<span className="text-blue-600">.</span>
-          </Link>
+          <YoutentLogo href="/dashboard" />
 
           <Link
             href="/dashboard"

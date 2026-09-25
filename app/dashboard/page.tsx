@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
+import DashboardProjectsPanel from "@/components/DashboardProjectsPanel";
 
 type Creator = {
   id: string;
@@ -46,7 +47,7 @@ export default async function DashboardPage() {
     profile?.full_name || user.user_metadata?.full_name || "User";
 
   const accountType =
-    profile?.account_type || user.user_metadata?.account_type || "client";
+    (profile?.account_type || user.user_metadata?.account_type || "client") as "client" | "freelancer";
 
   const isFreelancer = accountType === "freelancer";
 
@@ -74,11 +75,10 @@ export default async function DashboardPage() {
   const completedProjects =
     projects?.filter((project) => project.status === "completed").length || 0;
 
-  const displayProjects = (projects || []).slice(0, 4);
   const displayCreators = (creators || []).slice(0, 3);
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_8%_0%,rgba(59,130,246,.09),transparent_28%),radial-gradient(circle_at_92%_8%,rgba(124,58,237,.08),transparent_26%),#f7f9fc] text-slate-950">
+    <main className="dashboard-shell min-h-screen bg-[radial-gradient(circle_at_8%_0%,rgba(37,99,235,.13),transparent_30%),radial-gradient(circle_at_92%_8%,rgba(124,58,237,.12),transparent_28%),radial-gradient(circle_at_50%_55%,rgba(14,165,233,.05),transparent_34%),#edf1f6] text-slate-950">
       <MarketplaceHeader accountType={accountType} />
 
       {/* ================= DASHBOARD ================= */}
@@ -127,13 +127,14 @@ export default async function DashboardPage() {
           <div className="mt-5 flex justify-end"><Link href="/wallet" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm hover:border-blue-300 hover:text-blue-600">Open Wallet →</Link></div>
         )}
 
-        {/* Metrics */}
-        <section className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard icon="💼" label="Account" value={isFreelancer ? "Freelancer" : "Client"} badge="ACTIVE" />
-          <MetricCard icon="📁" label="Total Projects" value={String(projectCount)} />
-          <MetricCard icon="⚡" label="Active Projects" value={String(activeProjects)} />
-          <MetricCard icon="✓" label="Completed" value={String(completedProjects)} />
-        </section>
+        {/* Metrics + interactive project controls */}
+        <DashboardProjectsPanel
+          accountType={accountType}
+          projectCount={projectCount}
+          activeProjects={activeProjects}
+          completedProjects={completedProjects}
+          projects={projects || []}
+        />
 
         {/* Recommended Creators */}
         {!isFreelancer && (
@@ -231,126 +232,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Projects */}
-        <section className="pt-7">
-          <SectionHeading
-            title="My Projects"
-            subtitle={
-              isFreelancer
-                ? "Projects you are currently working on with clients."
-                : "Projects you have started with creators."
-            }
-            actionLabel={`${projectCount} ${projectCount === 1 ? "project" : "projects"}`}
-          />
 
-          {displayProjects.length > 0 ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {displayProjects.map((project) => {
-                const statusLabel =
-                  project.status === "pending_payment"
-                    ? "Awaiting Payment"
-                    : project.status === "active"
-                    ? "Active"
-                    : project.status === "completed"
-                    ? "Completed"
-                    : project.status === "cancelled"
-                    ? "Cancelled"
-                    : project.status;
-
-                const statusClass =
-                  project.status === "pending_payment"
-                    ? "bg-amber-50 text-amber-700 border-amber-100"
-                    : project.status === "active"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                    : project.status === "completed"
-                    ? "bg-blue-50 text-blue-700 border-blue-100"
-                    : project.status === "cancelled"
-                    ? "bg-red-50 text-red-700 border-red-100"
-                    : "bg-slate-50 text-slate-600 border-slate-200";
-
-                return (
-                  <article
-                    key={project.id}
-                    className="premium-card p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-xl sm:p-5"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
-                          Project
-                          {project.status === "active" && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
-                        </div>
-                        <h3 className="mt-1 truncate text-lg font-black text-slate-950">{project.title}</h3>
-                      </div>
-                      <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusClass}`}>
-                        {statusLabel}
-                      </span>
-                    </div>
-
-                    <p className="mt-2 line-clamp-1 text-xs text-slate-500">
-                      {project.description || "No project description added."}
-                    </p>
-
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      <div className="rounded-xl bg-slate-50 px-3 py-2.5">
-                        <p className="text-[10px] font-semibold text-slate-400">Budget</p>
-                        <p className="mt-0.5 text-sm font-black text-slate-900">
-                          {project.budget !== null
-                            ? `₹${Number(project.budget).toLocaleString("en-IN")}`
-                            : "Not specified"}
-                        </p>
-                      </div>
-                      <div className="rounded-xl bg-slate-50 px-3 py-2.5">
-                        <p className="text-[10px] font-semibold text-slate-400">Deadline</p>
-                        <p className="mt-0.5 text-sm font-black text-slate-900">
-                          {project.deadline
-                            ? new Date(project.deadline).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })
-                            : "Not specified"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Link
-                      href={`/projects/${project.id}`}
-                      className="mt-3 flex h-10 items-center justify-center rounded-xl bg-slate-950 text-xs font-bold text-white transition hover:bg-blue-600"
-                    >
-                      Open Project <span className="ml-1.5">→</span>
-                    </Link>
-                  </article>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-xl">📁</div>
-              <h3 className="mt-3 text-lg font-black">No projects yet</h3>
-              <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
-                {isFreelancer
-                  ? "Accepted projects will appear here when clients hire you."
-                  : "Once a creator accepts your request, your project will appear here."}
-              </p>
-              {!isFreelancer && (
-                <Link
-                  href="/creators"
-                  className="mt-4 inline-flex rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
-                >
-                  Browse Creators
-                </Link>
-              )}
-            </div>
-          )}
-
-          {projectCount > 4 && (
-            <div className="mt-4 text-center">
-              <Link href="/projects" className="text-sm font-bold text-blue-600 hover:text-blue-700">
-                View all projects →
-              </Link>
-            </div>
-          )}
-        </section>
       </div>
     </main>
   );

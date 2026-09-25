@@ -9,6 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  icons: { icon: "/youtent-favicon.png", shortcut: "/youtent-favicon.png", apple: "/youtent-favicon.png" },
   title: "YOUTENT — Where Talent Meets Opportunity",
   description:
     "YOUTENT connects businesses, creators, and freelancers with talented professionals for video editing, thumbnail design, voice over, and more.",
