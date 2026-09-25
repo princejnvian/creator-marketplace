@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
+import YoutentLogo from "@/components/YoutentLogo";
 export default function SignupPage() {
   const supabase = createClient();
 
@@ -115,18 +116,7 @@ export default function SignupPage() {
       <nav className="relative z-20 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
           {/* Logo */}
-          <Link
-            href="/"
-            className="group flex items-center gap-2"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105">
-              Y
-            </div>
-
-            <div className="text-xl font-black tracking-tight">
-              YOUTENT<span className="text-blue-600">.</span>
-            </div>
-          </Link>
+          <YoutentLogo href="/" />
 
           {/* Login */}
           <p className="text-sm text-slate-500">
@@ -159,18 +149,7 @@ export default function SignupPage() {
 
               {/* Top */}
               <div className="relative">
-                <Link
-                  href="/"
-                  className="group inline-flex items-center gap-2"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-sm font-black text-white backdrop-blur-sm transition group-hover:bg-white/20">
-                    Y
-                  </div>
-
-                  <span className="text-2xl font-black tracking-tight">
-                    YOUTENT<span className="text-blue-200">.</span>
-                  </span>
-                </Link>
+                <YoutentLogo href="/" size="lg" lightWordmark />
 
                 {/* Hero */}
                 <div className="mt-20">

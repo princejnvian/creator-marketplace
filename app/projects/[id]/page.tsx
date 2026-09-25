@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+import YoutentLogo from "@/components/YoutentLogo";
 type Props = {
   params: Promise<{
     id: string;
@@ -96,7 +97,9 @@ export default async function ProjectPage({ params }: Props) {
   const paymentStatus = payment?.status || "pending";
 
   const statusLabel =
-    project.status === "active"
+    project.status === "pending_payment"
+      ? "Awaiting Payment"
+      : project.status === "active"
       ? "Active"
       : project.status === "completed"
       ? "Completed"
@@ -105,7 +108,9 @@ export default async function ProjectPage({ params }: Props) {
       : project.status;
 
   const statusClasses =
-    project.status === "active"
+    project.status === "pending_payment"
+      ? "bg-amber-50 text-amber-700 border-amber-100"
+      : project.status === "active"
       ? "bg-emerald-50 text-emerald-700 border-emerald-100"
       : project.status === "completed"
       ? "bg-blue-50 text-blue-700 border-blue-100"
@@ -126,18 +131,7 @@ export default async function ProjectPage({ params }: Props) {
       <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
 
-          <Link
-            href="/dashboard"
-            className="group flex items-center gap-2.5"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105">
-              Y
-            </div>
-
-            <div className="text-xl font-black tracking-tight">
-              YOUTENT<span className="text-blue-600">.</span>
-            </div>
-          </Link>
+          <YoutentLogo href="/dashboard" />
 
           <Link
             href="/dashboard"

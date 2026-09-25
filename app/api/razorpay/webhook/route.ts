@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       const { data: payment, error: paymentLookupError } =
         await supabase
           .from("payments")
-          .select("id, project_id, status, freelancer_id, amount")
+          .select("id, project_id, status, freelancer_id, amount, project_amount")
           .eq(
             "gateway_order_id",
             razorpayOrderId
@@ -144,8 +144,8 @@ export async function POST(request: Request) {
 
         await supabase.from("wallets").upsert({ user_id: payment.freelancer_id }, { onConflict: "user_id", ignoreDuplicates: true });
         const { data: wallet } = await supabase.from("wallets").select("pending_balance").eq("user_id", payment.freelancer_id).maybeSingle();
-        await supabase.from("wallets").update({ pending_balance: Number(wallet?.pending_balance || 0) + Number(payment.amount || 0), updated_at: new Date().toISOString() }).eq("user_id", payment.freelancer_id);
-        await supabase.from("wallet_transactions").insert({ user_id: payment.freelancer_id, project_id: payment.project_id, payment_id: payment.id, type: "hold", amount: Number(payment.amount || 0), description: "Project payment held until client accepts delivery" });
+        await supabase.from("wallets").update({ pending_balance: Number(wallet?.pending_balance || 0) + Number(payment.project_amount ?? payment.amount ?? 0), updated_at: new Date().toISOString() }).eq("user_id", payment.freelancer_id);
+        await supabase.from("wallet_transactions").insert({ user_id: payment.freelancer_id, project_id: payment.project_id, payment_id: payment.id, type: "hold", amount: Number(payment.project_amount ?? payment.amount ?? 0), description: "Project payment held until client accepts delivery" });
 
         console.log(
           "Payment marked as paid by webhook:",

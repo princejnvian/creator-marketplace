@@ -81,6 +81,8 @@ if (existingPayment?.status === "paid") {
 
     // Validate budget
     const amount = Number(project.budget);
+    const platformFee = 50;
+    const totalAmount = amount + platformFee;
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json(
@@ -107,16 +109,18 @@ if (existingPayment?.status === "paid") {
     });
 
     // Razorpay expects amount in paise
-    const amountInPaise = Math.round(amount * 100);
+    const amountInPaise = Math.round(totalAmount * 100);
 
     const order = await razorpay.orders.create({
       amount: amountInPaise,
       currency: "INR",
-      receipt: `crevo_${project.id}`,
+      receipt: `youtent_${project.id}`,
       notes: {
         project_id: project.id,
         client_id: project.client_id,
         freelancer_id: project.freelancer_id,
+        project_amount: amount.toFixed(2),
+        platform_fee: platformFee.toFixed(2),
       },
     });
 
@@ -127,6 +131,9 @@ if (existingPayment?.status === "paid") {
       currency: order.currency,
       keyId,
       projectId: project.id,
+      projectAmount: amount,
+      platformFee,
+      totalAmount,
     });
   } catch (error) {
     console.error("Razorpay create order error:", error);

@@ -247,7 +247,9 @@ export default async function DashboardPage() {
             <div className="grid gap-4 lg:grid-cols-2">
               {displayProjects.map((project) => {
                 const statusLabel =
-                  project.status === "active"
+                  project.status === "pending_payment"
+                    ? "Awaiting Payment"
+                    : project.status === "active"
                     ? "Active"
                     : project.status === "completed"
                     ? "Completed"
@@ -256,7 +258,9 @@ export default async function DashboardPage() {
                     : project.status;
 
                 const statusClass =
-                  project.status === "active"
+                  project.status === "pending_payment"
+                    ? "bg-amber-50 text-amber-700 border-amber-100"
+                    : project.status === "active"
                     ? "bg-emerald-50 text-emerald-700 border-emerald-100"
                     : project.status === "completed"
                     ? "bg-blue-50 text-blue-700 border-blue-100"

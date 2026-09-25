@@ -166,6 +166,8 @@ export default async function PaymentPage({ params }: Props) {
   }
 
   const amount = Number(project.budget);
+  const platformFee = 50;
+  const totalAmount = amount + platformFee;
 
   // Payment already completed
   if (payment?.status === "paid") {
@@ -289,20 +291,21 @@ export default async function PaymentPage({ params }: Props) {
           </div>
 
           {/* Amount */}
-          <div className="flex items-center justify-between border-b border-gray-200 py-6">
-            <div>
-              <p className="text-sm text-gray-500">
-                Project Amount
-              </p>
-
-              <p className="mt-1 text-sm font-medium text-gray-700">
-                INR
-              </p>
+          <div className="border-b border-gray-200 py-6">
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-gray-500">Project amount</span>
+                <span className="font-semibold text-gray-900">₹{amount.toLocaleString("en-IN")}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-gray-500">YOUTENT platform fee</span>
+                <span className="font-semibold text-gray-900">₹{platformFee.toLocaleString("en-IN")}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4 border-t border-gray-100 pt-4">
+                <span className="font-bold text-gray-900">Total payable</span>
+                <span className="text-2xl font-extrabold text-gray-900">₹{totalAmount.toLocaleString("en-IN")}</span>
+              </div>
             </div>
-
-            <p className="text-3xl font-extrabold text-gray-900">
-              ₹{amount.toLocaleString("en-IN")}
-            </p>
           </div>
 
           {/* Payment Info */}
@@ -330,6 +333,7 @@ export default async function PaymentPage({ params }: Props) {
             projectId={project.id}
             amount={amount}
             projectTitle={project.title}
+            platformFee={platformFee}
           />
 
           <p className="mt-4 text-center text-xs text-gray-500">

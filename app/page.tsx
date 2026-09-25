@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import YoutentLogo from "@/components/YoutentLogo";
 export default function Home() {
   return (
     <main className="min-h-screen w-full overflow-x-hidden bg-white text-slate-950">
@@ -9,20 +10,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6 lg:px-8">
 
           {/* Logo */}
-          <Link
-            href="/"
-            className="group flex items-center gap-3"
-          >
-            <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:scale-105 group-hover:shadow-xl group-hover:shadow-blue-600/30">
-              <span className="relative z-10">Y</span>
-
-              <div className="absolute inset-0 translate-y-full bg-white/20 transition-transform duration-300 group-hover:translate-y-0" />
-            </div>
-
-            <div className="text-xl font-black tracking-[-0.03em] text-slate-950 transition-colors duration-300 group-hover:text-blue-600">
-              YOUTENT<span className="text-blue-600">.</span>
-            </div>
-          </Link>
+          <YoutentLogo href="/" />
 
           {/* Desktop Navigation */}
           <div className="hidden items-center gap-7 md:flex">
@@ -373,20 +361,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 sm:flex-row">
 
           {/* Footer Logo */}
-          <Link
-            href="/"
-            className="group flex items-center gap-3"
-          >
-
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-md transition-all duration-300 group-hover:scale-105">
-              Y
-            </div>
-
-            <div className="text-xl font-black tracking-tight">
-              YOUTENT<span className="text-blue-600">.</span>
-            </div>
-
-          </Link>
+          <YoutentLogo href="/" />
 
 
           <div className="text-center text-sm text-slate-500 sm:text-right">

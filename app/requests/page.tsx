@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import RequestActions from "./RequestActions";
+import MarketplaceHeader from "@/components/MarketplaceHeader";
 
 export default async function RequestsPage() {
   const supabase = await createClient();
@@ -109,49 +110,7 @@ export default async function RequestsPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
 
-      {/* ================= NAVBAR ================= */}
-
-      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6 lg:px-8">
-
-          {/* Logo */}
-
-          <Link
-            href="/dashboard"
-            className="group flex items-center gap-2.5"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105 group-hover:rotate-1">
-              Y
-            </div>
-
-            <div className="text-xl font-black tracking-tight sm:text-2xl">
-              YOUTENT<span className="text-blue-600">.</span>
-            </div>
-          </Link>
-
-          {/* Navigation */}
-
-          <div className="flex items-center gap-2 sm:gap-3">
-
-            <Link
-              href="/dashboard"
-              className="hidden rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 transition duration-300 hover:bg-slate-100 hover:text-slate-950 sm:inline-flex"
-            >
-              Dashboard
-            </Link>
-
-            <Link
-              href="/profile"
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-600 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:px-4"
-            >
-              <span className="sm:hidden">Profile</span>
-              <span className="hidden sm:inline">My Profile</span>
-            </Link>
-
-          </div>
-
-        </div>
-      </nav>
+      <MarketplaceHeader accountType="freelancer" />
 
       {/* ================= HERO ================= */}
 

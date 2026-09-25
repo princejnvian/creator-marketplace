@@ -68,12 +68,14 @@ type Props = {
   projectId: string;
   amount: number;
   projectTitle: string;
+  platformFee?: number;
 };
 
 export default function PaymentButton({
   projectId,
   amount,
   projectTitle,
+  platformFee = 50,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -383,9 +385,7 @@ export default function PaymentButton({
     >
       {loading
         ? "Processing Payment..."
-        : `Pay ₹${Number(amount).toLocaleString(
-            "en-IN"
-          )} →`}
+        : `Pay ₹${(Number(amount) + Number(platformFee)).toLocaleString("en-IN")} →`}
     </button>
   );
 }

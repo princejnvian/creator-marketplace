@@ -60,6 +60,33 @@ export async function POST(
       );
     }
 
+    // If a previous attempt already created the project, finish the
+    // acceptance flow instead of trying to insert a duplicate project.
+    const { data: existingProject } = await supabaseAdmin
+      .from("projects")
+      .select("id")
+      .eq("request_id", projectRequest.id)
+      .maybeSingle();
+
+    if (existingProject) {
+      const { error: existingUpdateError } = await supabaseAdmin
+        .from("project_requests")
+        .update({ status: "accepted", updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("creator_id", user.id)
+        .eq("status", "pending");
+
+      if (existingUpdateError) {
+        return NextResponse.json({ error: "Unable to accept this request. Please try again." }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        projectId: existingProject.id,
+        redirectTo: `/projects/${existingProject.id}/payment`,
+      });
+    }
+
     /*
      * Project creation is a protected server-side operation.
      * The old flow used the user's RLS client for the projects INSERT,
@@ -81,7 +108,7 @@ export async function POST(
         description: projectRequest.description,
         budget: projectRequest.budget,
         deadline: projectRequest.deadline,
-        status: "active",
+        status: "pending_payment",
       })
       .select("id")
       .single();

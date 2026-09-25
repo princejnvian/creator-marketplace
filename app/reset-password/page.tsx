@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+import YoutentLogo from "@/components/YoutentLogo";
 export default function ResetPasswordPage() {
   const supabase = createClient();
   const router = useRouter();
@@ -85,15 +86,7 @@ export default function ResetPasswordPage() {
       {/* Navbar */}
       <nav className="relative z-10 border-b border-slate-200/70 bg-white/75 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
-          <Link href="/" className="group flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition duration-300 group-hover:scale-105">
-              Y
-            </div>
-
-            <div className="text-xl font-black tracking-tight">
-              YOUTENT<span className="text-blue-600">.</span>
-            </div>
-          </Link>
+          <YoutentLogo href="/" />
 
           <Link
             href="/login"

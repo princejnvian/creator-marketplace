@@ -23,7 +23,9 @@ export default async function ProjectsPage() {
     .order("created_at", { ascending: false });
 
   const statusClass = (status: string) =>
-    status === "active"
+    status === "pending_payment"
+      ? "border-amber-100 bg-amber-50 text-amber-700"
+      : status === "active"
       ? "border-emerald-100 bg-emerald-50 text-emerald-700"
       : status === "completed"
       ? "border-blue-100 bg-blue-50 text-blue-700"
@@ -53,7 +55,7 @@ export default async function ProjectsPage() {
                     <p className="text-[10px] font-black uppercase tracking-[.18em] text-slate-400">Project</p>
                     <h2 className="mt-1 truncate text-xl font-black">{project.title}</h2>
                   </div>
-                  <span className={`shrink-0 rounded-full border px-3 py-1 text-[10px] font-black ${statusClass(project.status)}`}>{project.status}</span>
+                  <span className={`shrink-0 rounded-full border px-3 py-1 text-[10px] font-black ${statusClass(project.status)}`}>{project.status === "pending_payment" ? "Awaiting Payment" : project.status}</span>
                 </div>
                 <p className="relative mt-3 line-clamp-2 min-h-10 text-sm leading-5 text-slate-500">{project.description || "No description added."}</p>
                 <div className="relative mt-5 grid grid-cols-2 gap-3">

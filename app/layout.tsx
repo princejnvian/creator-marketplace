@@ -9,9 +9,6 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://youtent.in"),
-  alternates: { canonical: "/" },
-  robots: { index: true, follow: true },
   title: "YOUTENT — Where Talent Meets Opportunity",
   description:
     "YOUTENT connects businesses, creators, and freelancers with talented professionals for video editing, thumbnail design, voice over, and more.",
@@ -32,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
         {children}
       </body>

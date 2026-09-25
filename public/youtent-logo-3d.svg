@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+<defs>
+  <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#00F06A"/>
+    <stop offset=".5" stop-color="#00F5A0"/>
+    <stop offset="1" stop-color="#00D9A8"/>
+  </linearGradient>
+  <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#E21A0A"/>
+    <stop offset=".55" stop-color="#C30F00"/>
+    <stop offset="1" stop-color="#8B0700"/>
+  </linearGradient>
+  <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#11D7F0"/>
+    <stop offset="1" stop-color="#008BCB"/>
+  </linearGradient>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#11B5FF"/>
+    <stop offset="1" stop-color="#0878E8"/>
+  </linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+    <feDropShadow dx="18" dy="22" stdDeviation="14" flood-color="#000000" flood-opacity=".62"/>
+  </filter>
+  <filter id="softShadow" x="-30%" y="-30%" width="160%" height="170%">
+    <feGaussianBlur stdDeviation="9"/>
+  </filter>
+  <filter id="glow" x="-30%" y="-30%" width="160%" height="170%">
+    <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#ffffff" flood-opacity=".35"/>
+  </filter>
+</defs>
+
+<!-- Deep 3D extrusion / shadow -->
+<g opacity=".72" transform="translate(22 30)" filter="url(#softShadow)">
+  <path d="m457.2 594l-360.9-534.6h148.3l283 419.7 281-419.7h148.3l-360.9 534.6v486h-138.8z" fill="#050505"/>
+  <path d="m61.6 214v-124.5h925.1v124.5h-388.2v969h-148.7v-969z" fill="#050505"/>
+</g>
+
+<!-- Dark extrusion edge -->
+<g transform="translate(14 18)" opacity=".9">
+  <path d="m457.2 594l-360.9-534.6h148.3l283 419.7 281-419.7h148.3l-360.9 534.6v486h-138.8z" fill="#005A4D"/>
+  <path d="m61.6 214v-124.5h925.1v124.5h-388.2v969h-148.7v-969z" fill="#650700"/>
+</g>
+
+<!-- Main red cross/T layer -->
+<path d="m61.6 214v-124.5h925.1v124.5h-388.2v969h-148.7v-969z"
+      fill="url(#red)" stroke="#5E0500" stroke-width="5" filter="url(#shadow)"/>
+
+<!-- Main green Y -->
+<path d="m457.2 594l-360.9-534.6h148.3l283 419.7 281-419.7h148.3l-360.9 534.6v486h-138.8z"
+      fill="url(#green)" stroke="#00B978" stroke-width="5" filter="url(#glow)"/>
+
+<!-- Blue/cyan translucent 3D side facets -->
+<path d="M96.3 59.4h148.3l283 419.7-76.4 114.9z"
+      fill="url(#cyan)" opacity=".78" stroke="#B7F6FF" stroke-width="4"/>
+<path d="M808.6 59.4h148.3L606 594l-76.4-114.9z"
+      fill="url(#blue)" opacity=".84" stroke="#9DEBFF" stroke-width="4"/>
+
+<!-- Crisp highlight edges -->
+<path d="M96.3 59.4h148.3l283 419.7" fill="none" stroke="#72EFFF" stroke-width="4" opacity=".75"/>
+<path d="M956.9 59.4H808.6L529.6 479.1" fill="none" stroke="#8FE9FF" stroke-width="4" opacity=".75"/>
+<path d="M61.6 89.5h925.1" fill="none" stroke="#FF6C5E" stroke-width="4" opacity=".7"/>
+</svg>

@@ -182,11 +182,11 @@ export async function POST(
     // PROJECT STATUS CHECK
     // =========================================
 
-    if (project.status !== "active") {
+    if (!["pending_payment", "active"].includes(project.status)) {
       return NextResponse.json(
         {
           error:
-            "Payment is only allowed for active projects",
+            "Payment is only allowed for unpaid projects",
         },
         {
           status: 400,
@@ -213,6 +213,8 @@ export async function POST(
     }
 
     const projectAmount = Number(project.budget);
+    const platformFee = 50;
+    const totalAmount = projectAmount + platformFee;
 
     if (
       !Number.isFinite(projectAmount) ||
@@ -285,7 +287,7 @@ export async function POST(
     // =========================================
 
     const expectedAmountPaise = Math.round(
-      projectAmount * 100
+      totalAmount * 100
     );
 
     if (
@@ -295,7 +297,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Razorpay order amount does not match project budget",
+            "Razorpay order amount does not match the payable total",
         },
         {
           status: 400,
@@ -390,7 +392,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Payment amount does not match project budget",
+            "Payment amount does not match the payable total",
         },
         {
           status: 400,
@@ -450,7 +452,9 @@ export async function POST(
         payment_gateway,
         gateway_payment_id,
         gateway_order_id,
-        paid_at
+        paid_at,
+        project_amount,
+        platform_fee
       `)
       .eq("project_id", project.id)
       .maybeSingle();
@@ -480,7 +484,9 @@ export async function POST(
       project_id: project.id,
       client_id: project.client_id,
       freelancer_id: project.freelancer_id,
-      amount: projectAmount,
+      amount: totalAmount,
+      project_amount: projectAmount,
+      platform_fee: platformFee,
       currency: "INR",
       status: "paid",
       payment_gateway: "razorpay",
@@ -552,7 +558,7 @@ export async function POST(
       .update({ status: "active" })
       .eq("id", project.id)
       .eq("client_id", user.id)
-      .eq("status", "active");
+      .in("status", ["pending_payment", "active"]);
 
     if (activateError) {
       console.error("Project activation error:", activateError);

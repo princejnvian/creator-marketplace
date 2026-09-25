@@ -29,7 +29,13 @@ export default function MarketplaceNav({ accountType = "client", active }: Props
     <header className="marketplace-header">
       <div className="marketplace-header-main">
         <Link href="/dashboard" className="marketplace-brand" aria-label="YOUTENT Dashboard">
-          <span className="marketplace-brand-mark">Y</span>
+          <span className="marketplace-brand-mark marketplace-brand-mark-image">
+            <img
+              src="/youtent-logo-3d.svg"
+              alt="YOUTENT"
+              className="h-full w-full object-contain"
+            />
+          </span>
           <span>YOUTENT<span className="marketplace-brand-dot">.</span></span>
         </Link>
 
