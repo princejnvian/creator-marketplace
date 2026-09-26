@@ -3,10 +3,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 
-export default async function ProjectsPage() {
+export default async function ProjectsPage({ searchParams }: { searchParams?: Promise<{ status?: string }> }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const params = (await searchParams) || {};
+  const statusFilter = ["pending_payment", "active", "completed", "cancelled"].includes(params.status || "") ? params.status : undefined;
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -21,6 +24,8 @@ export default async function ProjectsPage() {
     .select("id, title, description, budget, deadline, status, created_at")
     .or(`client_id.eq.${user.id},freelancer_id.eq.${user.id}`)
     .order("created_at", { ascending: false });
+
+  const visibleProjects = statusFilter ? (projects || []).filter((project) => project.status === statusFilter) : (projects || []);
 
   const statusClass = (status: string) =>
     status === "pending_payment"
@@ -44,11 +49,13 @@ export default async function ProjectsPage() {
           <p className="relative mt-2 max-w-2xl text-sm leading-6 text-slate-500">Everything you are working on with creators, in one clean workspace.</p>
         </div>
 
+        {statusFilter && <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold"><Link href="/projects" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-500">All</Link>{["pending_payment","active","completed"].map((s) => <Link key={s} href={`/projects?status=${s}`} className={`rounded-full border px-3 py-1.5 ${statusFilter === s ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-500"}`}>{s === "pending_payment" ? "Pending" : s[0].toUpperCase()+s.slice(1)}</Link>)}</div>}
+
         {error ? (
           <div className="mt-7 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-700">Unable to load projects right now. Please refresh and try again.</div>
-        ) : projects?.length ? (
+        ) : visibleProjects.length ? (
           <div className="mt-7 grid gap-5 lg:grid-cols-2">
-            {projects.map((project) => (
+            {visibleProjects.map((project) => (
               <article key={project.id} className="premium-card p-5 transition duration-300 hover:-translate-y-1 hover:shadow-2xl sm:p-6">
                 <div className="relative flex items-start justify-between gap-4">
                   <div className="min-w-0">

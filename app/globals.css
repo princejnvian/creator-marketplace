@@ -109,3 +109,11 @@ button:not(:disabled):hover, a:hover { }
 
 .youtent-logo-glossy img { display: block; }
 .youtent-logo-glossy { flex: 0 0 auto; }
+
+/* Compact marketplace request rows + mobile app feel */
+.request-row { content-visibility: auto; }
+@media (max-width: 639px) {
+  body { padding-bottom: env(safe-area-inset-bottom); }
+  .dashboard-shell { min-height: 100dvh; }
+  button, a { touch-action: manipulation; }
+}

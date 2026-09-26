@@ -57,12 +57,12 @@ export default function RequestActions({
 
   return (
     <div className="w-full">
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+      <div className="flex w-full gap-2">
         <button
           type="button"
           onClick={() => updateRequest("declined")}
           disabled={loading !== ""}
-          className="rounded-xl border border-red-200 px-6 py-3 font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex-1 rounded-xl border border-red-200 px-3 py-2.5 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading === "declined" ? "Declining..." : "Decline"}
         </button>
@@ -71,14 +71,14 @@ export default function RequestActions({
           type="button"
           onClick={() => updateRequest("accepted")}
           disabled={loading !== ""}
-          className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex-[1.45] rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading === "accepted" ? "Accepting..." : "Accept Request"}
         </button>
       </div>
 
       {error && (
-        <p className="mt-3 text-right text-sm text-red-600">
+        <p className="mt-2 text-left text-xs text-red-600">
           {error}
         </p>
       )}
