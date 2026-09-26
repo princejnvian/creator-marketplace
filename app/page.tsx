@@ -3,7 +3,7 @@ import Link from "next/link";
 import YoutentLogo from "@/components/YoutentLogo";
 export default function Home() {
   return (
-    <main className="min-h-screen w-full overflow-x-hidden bg-white text-slate-950">
+    <main className="min-h-screen w-full overflow-x-hidden youtent-app-bg text-slate-950">
 
       {/* ================= NAVBAR ================= */}
       <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">

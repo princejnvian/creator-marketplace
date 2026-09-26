@@ -117,7 +117,7 @@ export default async function CreatorProfilePage({ params }: Props) {
   };
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_8%_8%,rgba(59,130,246,.12),transparent_25rem),radial-gradient(circle_at_92%_12%,rgba(124,58,237,.10),transparent_26rem),linear-gradient(180deg,#f4f8ff_0%,#eef4fb_48%,#f8faff_100%)] text-slate-950">
+    <main className="min-h-screen youtent-app-bg overflow-x-hidden text-slate-950">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <MarketplaceHeader accountType="client" />
 

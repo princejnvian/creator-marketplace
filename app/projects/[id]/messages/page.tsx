@@ -155,7 +155,7 @@ export default async function MessagesPage({ params }: Props) {
   const messageCount = messages?.length || 0;
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen youtent-app-bg text-slate-900">
 
       {/* Decorative background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">

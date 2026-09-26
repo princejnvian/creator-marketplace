@@ -79,8 +79,10 @@ export default function MarketplaceNavActions({ accountType }: Props) {
     };
   }, [menuOpen]);
 
+  // Badge state is tracked per section. Server read_at is intentionally not used
+  // for these counters because reading the notification center must not silently
+  // clear the separate Messages or Requests badges.
   const isLocallyUnseen = (item: NotificationItem, bucket: string) => {
-    if (item.read_at) return false;
     const cutoff = seenAt[bucket];
     return !cutoff || new Date(item.created_at).getTime() > new Date(cutoff).getTime();
   };
@@ -122,7 +124,11 @@ export default function MarketplaceNavActions({ accountType }: Props) {
   function openNotifications() {
     setOpen((value) => {
       const next = !value;
-      if (next && unread.length) void markAllRead();
+      if (next && unread.length) {
+        const now = new Date().toISOString();
+        setSeenAt((current) => ({ ...current, all: now }));
+        try { localStorage.setItem("youtent_seen_notifications_at", now); } catch {}
+      }
       return next;
     });
   }
@@ -180,16 +186,32 @@ export default function MarketplaceNavActions({ accountType }: Props) {
       <button type="button" aria-label="Open menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg text-slate-700 shadow-sm sm:hidden">☰</button>
 
       {mounted && menuOpen && createPortal(
-        <div className="youtent-mobile-menu fixed inset-0 z-[2147483000] overflow-hidden sm:hidden" style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", minHeight: "100dvh" }}>
-          <button aria-label="Close menu" onClick={() => setMenuOpen(false)} className="absolute inset-0 z-0 bg-slate-950/45 backdrop-blur-[2px]" />
-          <aside className="absolute right-0 top-0 z-10 flex h-full w-[min(92vw,390px)] max-w-full flex-col overflow-hidden bg-white shadow-[-24px_0_70px_-25px_rgba(15,23,42,.55)]" style={{ height: "100vh", minHeight: "100dvh", maxHeight: "none" }}>
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <div><p className="text-xs font-black uppercase tracking-[.16em] text-blue-600">YOUTENT</p><p className="mt-0.5 text-lg font-black">Quick Access</p></div>
-              <button type="button" onClick={() => setMenuOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">×</button>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="YOUTENT quick access"
+          className="sm:hidden"
+          style={{
+            position: "fixed", inset: 0, width: "100vw", height: "100dvh", minHeight: "100vh",
+            zIndex: 2147483647, display: "flex", justifyContent: "flex-end", alignItems: "stretch",
+            background: "rgba(3, 7, 18, .58)", backdropFilter: "blur(3px)", isolation: "isolate",
+          }}
+        >
+          <button aria-label="Close menu" onClick={() => setMenuOpen(false)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, background: "transparent", cursor: "default" }} />
+          <aside
+            style={{
+              position: "relative", zIndex: 1, width: "min(92vw, 390px)", height: "100dvh", minHeight: "100vh", maxHeight: "100dvh",
+              display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff",
+              boxShadow: "-24px 0 70px -25px rgba(15,23,42,.7)",
+            }}
+          >
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div><p className="text-xs font-black uppercase tracking-[.16em] text-blue-600">YOUTENT</p><p className="mt-0.5 text-lg font-black text-slate-950">Quick Access</p></div>
+              <button type="button" onClick={() => setMenuOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-lg font-black text-slate-700">×</button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-violet-50 p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 overscroll-contain">
+              <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 p-4">
                 <p className="text-xs font-black uppercase tracking-wider text-blue-600">Workspace</p>
                 <p className="mt-1 text-sm font-bold text-slate-900">Everything important, one tap away.</p>
               </div>
@@ -206,11 +228,13 @@ export default function MarketplaceNavActions({ accountType }: Props) {
                 <MobileLink href="/notifications" label="Notifications" icon="🔔" badge={unread.length} onClick={() => { if (unread.length) void markAllRead(); setMenuOpen(false); }} />
                 <MobileLink href="/profile" label="My Profile" icon="◉" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/wallet" label="Wallet" icon="₹" onClick={() => setMenuOpen(false)} />
+                <MobileLink href="/faq" label="FAQ & Help" icon="?" onClick={() => setMenuOpen(false)} />
+                <MobileLink href="/contact" label="Contact Support" icon="✆" onClick={() => setMenuOpen(false)} />
               </div>
             </div>
 
-            <div className="border-t border-slate-100 p-4">
-              <form action="/auth/signout" method="post"><button className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm">Log out</button></form>
+            <div className="shrink-0 border-t border-slate-100 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+              <form action="/auth/signout" method="post"><button className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-black text-slate-700 shadow-sm">Log out</button></form>
             </div>
           </aside>
         </div>,

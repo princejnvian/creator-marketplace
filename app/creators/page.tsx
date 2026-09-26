@@ -94,7 +94,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
   });
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_8%_0%,rgba(59,130,246,.08),transparent_26rem),radial-gradient(circle_at_92%_8%,rgba(124,58,237,.07),transparent_24rem),#f7f9fc] text-slate-950">
+    <main className="min-h-screen youtent-app-bg text-slate-950">
 
       <MarketplaceHeader accountType="client" />
 

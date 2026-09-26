@@ -85,7 +85,7 @@ export default async function FilesPage({ params }: Props) {
 
   if (!paymentPaid) {
     return (
-      <main className="min-h-screen bg-slate-50 text-slate-900">
+      <main className="min-h-screen youtent-app-bg text-slate-900">
         <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
             <YoutentLogo href="/dashboard" />

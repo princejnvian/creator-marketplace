@@ -124,7 +124,7 @@ export default async function MyRequestsPage() {
     ).length || 0;
 
   return (
-    <main className="my-requests-page min-h-screen bg-slate-50 text-slate-900">
+    <main className="my-requests-page youtent-app-bg min-h-screen text-slate-900">
 
       <MarketplaceHeader accountType="client" />
 

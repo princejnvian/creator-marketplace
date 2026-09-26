@@ -49,7 +49,7 @@ export default async function RequestsPage({ searchParams }: Props) {
   const completedRequests = (requests || []).filter((r) => r.status === "completed").length;
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_8%_0%,rgba(37,99,235,.10),transparent_30%),radial-gradient(circle_at_92%_0%,rgba(124,58,237,.10),transparent_30%),#f4f7fb] text-slate-900">
+    <main className="min-h-screen youtent-app-bg text-slate-900">
       <MarketplaceHeader accountType="freelancer" />
 
       <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">

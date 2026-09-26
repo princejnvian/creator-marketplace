@@ -138,3 +138,22 @@ button:not(:disabled):hover, a:hover { }
 @supports (height: 100svh) {
   .youtent-mobile-menu, .youtent-mobile-menu > aside { min-height: 100svh !important; }
 }
+
+
+/* YOUTENT visual system: deep navy/violet background with soft logo-inspired glows.
+   Cards remain light so text stays highly readable. */
+.youtent-app-bg {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(37, 99, 235, .26), transparent 28rem),
+    radial-gradient(circle at 92% 6%, rgba(124, 58, 237, .24), transparent 26rem),
+    radial-gradient(circle at 48% 72%, rgba(6, 182, 212, .10), transparent 30rem),
+    linear-gradient(145deg, #080912 0%, #0d1020 44%, #130d25 100%) !important;
+  color: #f8fafc;
+}
+.youtent-app-bg > section, .youtent-app-bg > div { position: relative; }
+.youtent-app-bg .text-slate-950, .youtent-app-bg .text-slate-900 { color: #0f172a; }
+.youtent-app-bg .text-slate-600 { color: #475569; }
+.youtent-app-bg .text-slate-500 { color: #64748b; }
+@media (max-width: 639px) {
+  .youtent-app-bg { background-attachment: scroll; }
+}

@@ -23,7 +23,7 @@ export default async function NotificationsPage() {
     .limit(50);
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen youtent-app-bg text-slate-900">
       <nav className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4 sm:px-6">
           <Link href="/dashboard" className="text-xl font-black tracking-tight">

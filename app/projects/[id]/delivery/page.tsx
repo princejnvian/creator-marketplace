@@ -100,7 +100,7 @@ export default async function DeliveryPage({ params }: Props) {
 
   if (!paymentPaid) {
     return (
-      <main className="min-h-screen bg-slate-50 text-slate-900">
+      <main className="min-h-screen youtent-app-bg text-slate-900">
         <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
             <YoutentLogo href="/dashboard" />
@@ -1221,47 +1221,9 @@ export default async function DeliveryPage({ params }: Props) {
                             return;
                           }
 
-                          // =========================
-                          // COMPLETE PROJECT
-                          // SERVER-SIDE ADMIN
-                          // =========================
-
-                          const {
-                            error:
-                              projectUpdateError,
-                          } =
-                            await supabaseAdmin
-                              .from("projects")
-                              .update({
-                                status:
-                                  "completed",
-                              })
-                              .eq(
-                                "id",
-                                projectCheck.id
-                              )
-                              .eq(
-                                "client_id",
-                                user.id
-                              )
-                              .eq(
-                                "status",
-                                "active"
-                              );
-
-                          if (
-                            projectUpdateError
-                          ) {
-                            console.error(
-                              "Project completion error:",
-                              projectUpdateError
-                            );
-
-                            return;
-                          }
-
-                          // Release the captured payment to the freelancer wallet.
-                          const { error: releaseError } = await supabaseAdmin
+                          // Release escrow atomically. The database function verifies that
+                          // the authenticated caller is the project client and completes the project.
+                          const { error: releaseError } = await supabase
                             .rpc("release_project_payment", { p_project_id: project.id });
 
                           if (releaseError) {

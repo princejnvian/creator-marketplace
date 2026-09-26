@@ -39,7 +39,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams?: Pr
       : "border-slate-200 bg-slate-50 text-slate-600";
 
   return (
-    <main className="min-h-screen text-slate-950">
+    <main className="min-h-screen youtent-app-bg text-slate-950">
       <MarketplaceHeader accountType={accountType} />
       <section className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-8">
         <div className="soft-grid relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white/75 px-6 py-8 shadow-[0_30px_90px_-55px_rgba(15,23,42,.35)] sm:px-9">

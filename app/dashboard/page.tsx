@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 import DashboardProjectsPanel from "@/components/DashboardProjectsPanel";
+import SiteFooter from "@/components/SiteFooter";
 
 type Creator = {
   id: string;
@@ -78,7 +79,7 @@ export default async function DashboardPage() {
   const displayCreators = (creators || []).slice(0, 3);
 
   return (
-    <main className="dashboard-shell min-h-screen bg-[radial-gradient(circle_at_8%_0%,rgba(37,99,235,.13),transparent_30%),radial-gradient(circle_at_92%_8%,rgba(124,58,237,.12),transparent_28%),radial-gradient(circle_at_50%_55%,rgba(14,165,233,.05),transparent_34%),#edf1f6] text-slate-950">
+    <main className="dashboard-shell youtent-app-bg min-h-screen text-slate-950">
       <MarketplaceHeader accountType={accountType} />
 
       {/* ================= DASHBOARD ================= */}
@@ -234,6 +235,7 @@ export default async function DashboardPage() {
 
 
       </div>
+      <SiteFooter />
     </main>
   );
 }

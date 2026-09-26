@@ -577,79 +577,32 @@ export async function POST(
       return NextResponse.json({ error: "Payment verified but project activation failed" }, { status: 500 });
     }
 
-    // Hold the captured project amount in the freelancer's pending wallet once.
-    if (!existingPayment || existingPayment.status !== "paid") {
-      const { error: walletUpsertError } = await supabaseAdmin
-        .from("wallets")
-        .upsert(
-          { user_id: project.freelancer_id },
-          { onConflict: "user_id", ignoreDuplicates: true }
-        );
+    // Hold the captured project amount atomically and idempotently.
+    // This prevents webhook + browser verification races from double-crediting escrow.
+    const { data: savedPayment, error: savedPaymentLookupError } = await supabaseAdmin
+      .from("payments")
+      .select("id")
+      .eq("project_id", project.id)
+      .maybeSingle();
 
-      if (walletUpsertError) {
-        console.error("Wallet initialization error:", walletUpsertError);
-        return NextResponse.json(
-          { error: "Payment was saved, but wallet hold could not be created." },
-          { status: 500 }
-        );
-      }
+    if (savedPaymentLookupError || !savedPayment) {
+      console.error("Saved payment lookup error:", savedPaymentLookupError);
+      return NextResponse.json(
+        { error: "Payment was verified, but escrow could not be initialized." },
+        { status: 500 }
+      );
+    }
 
-      const { data: wallet, error: walletFetchError } = await supabaseAdmin
-        .from("wallets")
-        .select("pending_balance")
-        .eq("user_id", project.freelancer_id)
-        .maybeSingle();
+    const { error: holdError } = await supabaseAdmin.rpc("hold_project_payment", {
+      p_payment_id: savedPayment.id,
+    });
 
-      if (walletFetchError || !wallet) {
-        console.error("Wallet fetch error:", walletFetchError);
-        return NextResponse.json(
-          { error: "Payment was saved, but wallet hold could not be created." },
-          { status: 500 }
-        );
-      }
-
-      const { error: walletUpdateError } = await supabaseAdmin
-        .from("wallets")
-        .update({
-          pending_balance: Number(wallet.pending_balance || 0) + projectAmount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", project.freelancer_id);
-
-      if (walletUpdateError) {
-        console.error("Wallet update error:", walletUpdateError);
-        return NextResponse.json(
-          { error: "Payment was saved, but wallet hold could not be created." },
-          { status: 500 }
-        );
-      }
-
-      const { data: savedPayment } = await supabaseAdmin
-        .from("payments")
-        .select("id")
-        .eq("project_id", project.id)
-        .maybeSingle();
-
-      if (savedPayment) {
-        const { error: transactionError } = await supabaseAdmin
-          .from("wallet_transactions")
-          .insert({
-            user_id: project.freelancer_id,
-            project_id: project.id,
-            payment_id: savedPayment.id,
-            type: "hold",
-            amount: projectAmount,
-            description: "Project payment held until client accepts delivery",
-          });
-
-        if (transactionError) {
-          console.error("Wallet transaction error:", transactionError);
-          return NextResponse.json(
-            { error: "Payment was saved, but wallet transaction could not be recorded." },
-            { status: 500 }
-          );
-        }
-      }
+    if (holdError) {
+      console.error("Payment escrow hold error:", holdError);
+      return NextResponse.json(
+        { error: "Payment was verified, but escrow could not be initialized." },
+        { status: 500 }
+      );
     }
 
     // =========================================

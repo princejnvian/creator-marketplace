@@ -76,7 +76,7 @@ export default async function MyRequestsPage() {
     projects.find((project) => project.request_id === requestId);
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900">
+    <main className="min-h-screen youtent-app-bg text-gray-900">
 
       {/* Navbar */}
       <nav className="border-b border-gray-200 bg-white">
