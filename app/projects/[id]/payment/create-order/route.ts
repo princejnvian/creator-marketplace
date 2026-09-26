@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   try {
@@ -123,6 +124,36 @@ if (existingPayment?.status === "paid") {
         platform_fee: platformFee.toFixed(2),
       },
     });
+
+    // Persist the Razorpay order before opening Checkout so that
+    // webhooks and the verification endpoint can always find the payment.
+    const { error: paymentSaveError } = await supabaseAdmin
+      .from("payments")
+      .upsert(
+        {
+          project_id: project.id,
+          client_id: project.client_id,
+          freelancer_id: project.freelancer_id,
+          amount: totalAmount,
+          project_amount: amount,
+          platform_fee: platformFee,
+          currency: "INR",
+          status: "processing",
+          payment_gateway: "razorpay",
+          gateway_order_id: order.id,
+          escrow_status: "pending",
+          paid_at: null,
+        },
+        { onConflict: "project_id" }
+      );
+
+    if (paymentSaveError) {
+      console.error("Payment order save error:", paymentSaveError);
+      return NextResponse.json(
+        { error: "Unable to initialize payment. Please try again." },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

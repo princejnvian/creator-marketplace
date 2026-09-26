@@ -277,18 +277,12 @@ export default function PaymentButton({
             // 6. Payment Verified
             // --------------------------------
 
-            alert(
-              "Payment successful and verified by YOUTENT! ✅"
-            );
-
             // --------------------------------
-            // 7. Go back to Project Page
+            // 7. Return to the project with a success state
             // --------------------------------
-
-            router.push(
-              `/projects/${projectId}`
-            );
-
+            // The project page shows a clear payment-success banner
+            // and the verified project status after the redirect.
+            router.replace(`/projects/${projectId}?payment=success`);
             router.refresh();
           } catch (error: unknown) {
             console.error(

@@ -147,6 +147,12 @@ export async function POST(request: Request) {
         await supabase.from("wallets").update({ pending_balance: Number(wallet?.pending_balance || 0) + Number(payment.project_amount ?? payment.amount ?? 0), updated_at: new Date().toISOString() }).eq("user_id", payment.freelancer_id);
         await supabase.from("wallet_transactions").insert({ user_id: payment.freelancer_id, project_id: payment.project_id, payment_id: payment.id, type: "hold", amount: Number(payment.project_amount ?? payment.amount ?? 0), description: "Project payment held until client accepts delivery" });
 
+        await supabase
+          .from("projects")
+          .update({ status: "active", updated_at: new Date().toISOString() })
+          .eq("id", payment.project_id)
+          .in("status", ["pending_payment", "active"]);
+
         console.log(
           "Payment marked as paid by webhook:",
           payment.id

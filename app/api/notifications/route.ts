@@ -35,13 +35,22 @@ export async function PATCH(request: Request) {
   const body = await request.json().catch(() => ({}));
   const now = new Date().toISOString();
 
-  if (body?.all === true) {
-    const { error } = await supabase
+  if (body?.all === true || typeof body?.type === "string") {
+    let query = supabase
       .from("notifications")
       .update({ read_at: now })
       .eq("user_id", user.id)
       .is("read_at", null);
 
+    if (typeof body?.type === "string") {
+      if (body.type === "request") {
+        query = query.in("type", ["project_request", "request_status"]);
+      } else {
+        query = query.eq("type", body.type);
+      }
+    }
+
+    const { error } = await query;
     if (error) return NextResponse.json({ error: "Unable to mark notifications as read." }, { status: 500 });
     return NextResponse.json({ success: true });
   }

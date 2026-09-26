@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 type NotificationItem = {
   id: string;
@@ -33,6 +34,9 @@ export default function MarketplaceNavActions({ accountType }: Props) {
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   async function loadNotifications() {
     try {
@@ -68,13 +72,26 @@ export default function MarketplaceNavActions({ accountType }: Props) {
     }).catch(() => undefined);
   }
 
-  async function markAllRead() {
-    setItems((current) => current.map((item) => ({ ...item, read_at: item.read_at || new Date().toISOString() })));
+  async function markAllRead(type?: string) {
+    const now = new Date().toISOString();
+    setItems((current) => current.map((item) =>
+      (!type || item.type === type || (type === "request" && (item.type === "project_request" || item.type === "request_status")))
+        ? { ...item, read_at: item.read_at || now }
+        : item
+    ));
     await fetch("/api/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ all: true }),
+      body: JSON.stringify(type ? { type } : { all: true }),
     }).catch(() => undefined);
+  }
+
+  function openNotifications() {
+    setOpen((value) => {
+      const next = !value;
+      if (next && unread.length) void markAllRead();
+      return next;
+    });
   }
 
   const requestsHref = accountType === "freelancer" ? "/requests" : "/my-requests";
@@ -85,18 +102,18 @@ export default function MarketplaceNavActions({ accountType }: Props) {
         Browse Creators
       </Link>
 
-      <Link href={requestsHref} className="relative hidden rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 md:inline-flex">
+      <Link href={requestsHref} onClick={() => { if (requestUnread) void markAllRead("request"); }} className="relative hidden rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 md:inline-flex">
         {accountType === "freelancer" ? "Requests" : "My Requests"}
         {requestUnread > 0 && <Badge count={requestUnread} />}
       </Link>
 
-      <Link href="/dashboard/messages" aria-label={`Messages${messageUnread ? `, ${messageUnread} unread` : ""}`} className="relative flex h-10 w-10 items-center justify-center rounded-xl text-base text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
+      <Link href="/dashboard/messages" onClick={() => { if (messageUnread) void markAllRead("message"); }} aria-label={`Messages${messageUnread ? `, ${messageUnread} unread` : ""}`} className="relative flex h-10 w-10 items-center justify-center rounded-xl text-base text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
         ✉
         {messageUnread > 0 && <Badge count={messageUnread} />}
       </Link>
 
       <div className="relative">
-        <button type="button" aria-label={`Notifications${unread.length ? `, ${unread.length} unread` : ""}`} onClick={() => setOpen((value) => !value)} className="relative flex h-10 w-10 items-center justify-center rounded-xl text-base text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
+        <button type="button" aria-label={`Notifications${unread.length ? `, ${unread.length} unread` : ""}`} onClick={openNotifications} className="relative flex h-10 w-10 items-center justify-center rounded-xl text-base text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
           🔔
           {unread.length > 0 && <Badge count={unread.length} />}
         </button>
@@ -129,10 +146,10 @@ export default function MarketplaceNavActions({ accountType }: Props) {
 
       <button type="button" aria-label="Open menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg text-slate-700 shadow-sm sm:hidden">☰</button>
 
-      {menuOpen && (
-        <div className="fixed inset-0 z-[200] sm:hidden">
-          <button aria-label="Close menu" onClick={() => setMenuOpen(false)} className="absolute inset-0 bg-slate-950/35 backdrop-blur-[2px]" />
-          <aside className="absolute right-0 top-0 flex h-full w-[min(88vw,360px)] flex-col bg-white shadow-[-20px_0_60px_-25px_rgba(15,23,42,.45)]">
+      {mounted && menuOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] sm:hidden">
+          <button aria-label="Close menu" onClick={() => setMenuOpen(false)} className="absolute inset-0 bg-slate-950/40 backdrop-blur-[3px]" />
+          <aside className="absolute inset-y-0 right-0 flex h-[100dvh] w-[min(90vw,380px)] flex-col overflow-hidden bg-white shadow-[-24px_0_70px_-25px_rgba(15,23,42,.5)]">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div><p className="text-xs font-black uppercase tracking-[.16em] text-blue-600">YOUTENT</p><p className="mt-0.5 text-lg font-black">Quick Access</p></div>
               <button type="button" onClick={() => setMenuOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">×</button>
@@ -147,13 +164,13 @@ export default function MarketplaceNavActions({ accountType }: Props) {
               <div className="mt-4 space-y-1.5">
                 <MobileLink href="/dashboard" label="Dashboard" icon="⌂" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/creators" label="Browse Creators" icon="✦" onClick={() => setMenuOpen(false)} />
-                <MobileLink href={requestsHref} label={accountType === "freelancer" ? "Project Requests" : "My Requests"} icon="📥" badge={requestUnread} onClick={() => setMenuOpen(false)} />
+                <MobileLink href={requestsHref} label={accountType === "freelancer" ? "Project Requests" : "My Requests"} icon="📥" badge={requestUnread} onClick={() => { if (requestUnread) void markAllRead("request"); setMenuOpen(false); }} />
                 <MobileLink href="/projects" label="My Projects" icon="▣" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/projects?status=pending_payment" label="Pending Projects" icon="⏳" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/projects?status=active" label="Active Projects" icon="⚡" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/projects?status=completed" label="Completed Projects" icon="✓" onClick={() => setMenuOpen(false)} />
-                <MobileLink href="/dashboard/messages" label="Messages" icon="✉" badge={messageUnread} onClick={() => setMenuOpen(false)} />
-                <MobileLink href="/notifications" label="Notifications" icon="🔔" badge={unread.length} onClick={() => setMenuOpen(false)} />
+                <MobileLink href="/dashboard/messages" label="Messages" icon="✉" badge={messageUnread} onClick={() => { if (messageUnread) void markAllRead("message"); setMenuOpen(false); }} />
+                <MobileLink href="/notifications" label="Notifications" icon="🔔" badge={unread.length} onClick={() => { if (unread.length) void markAllRead(); setMenuOpen(false); }} />
                 <MobileLink href="/profile" label="My Profile" icon="◉" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/wallet" label="Wallet" icon="₹" onClick={() => setMenuOpen(false)} />
               </div>
@@ -163,7 +180,8 @@ export default function MarketplaceNavActions({ accountType }: Props) {
               <form action="/auth/signout" method="post"><button className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm">Log out</button></form>
             </div>
           </aside>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

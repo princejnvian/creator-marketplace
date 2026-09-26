@@ -7,9 +7,12 @@ type Props = {
   params: Promise<{
     id: string;
   }>;
+  searchParams?: Promise<{
+    payment?: string;
+  }>;
 };
 
-export default async function ProjectPage({ params }: Props) {
+export default async function ProjectPage({ params, searchParams }: Props) {
   const supabase = await createClient();
 
   const {
@@ -21,6 +24,8 @@ export default async function ProjectPage({ params }: Props) {
   }
 
   const { id } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const paymentSuccess = resolvedSearchParams.payment === "success";
 
   // Get project
   const { data: project, error } = await supabase
@@ -147,6 +152,20 @@ export default async function ProjectPage({ params }: Props) {
 
       {/* Main */}
       <section className="mx-auto max-w-6xl px-5 py-10 sm:px-6 sm:py-14">
+
+        {paymentSuccess && paymentStatus === "paid" && (
+          <div className="mb-6 flex items-start gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-lg font-black text-emerald-700">
+              ✓
+            </div>
+            <div>
+              <p className="font-black text-emerald-900">Payment successful</p>
+              <p className="mt-1 text-sm text-emerald-700">
+                Your payment has been verified and the project is now active.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="mb-8">

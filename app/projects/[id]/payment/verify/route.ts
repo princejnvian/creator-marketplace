@@ -476,6 +476,17 @@ export async function POST(
       );
     }
 
+    // The stored payment/order must match the Razorpay order we are verifying.
+    if (
+      existingPayment?.gateway_order_id &&
+      existingPayment.gateway_order_id !== razorpayOrder.id
+    ) {
+      return NextResponse.json(
+        { error: "Razorpay order does not match the initialized payment." },
+        { status: 400 }
+      );
+    }
+
     // =========================================
     // PAYMENT DATA
     // =========================================
@@ -566,13 +577,79 @@ export async function POST(
       return NextResponse.json({ error: "Payment verified but project activation failed" }, { status: 500 });
     }
 
-    // Hold the captured amount in the freelancer's pending wallet once.
+    // Hold the captured project amount in the freelancer's pending wallet once.
     if (!existingPayment || existingPayment.status !== "paid") {
-      await supabaseAdmin.from("wallets").upsert({ user_id: project.freelancer_id }, { onConflict: "user_id", ignoreDuplicates: true });
-      const { data: wallet } = await supabaseAdmin.from("wallets").select("pending_balance").eq("user_id", project.freelancer_id).maybeSingle();
-      await supabaseAdmin.from("wallets").update({ pending_balance: Number(wallet?.pending_balance || 0) + projectAmount, updated_at: new Date().toISOString() }).eq("user_id", project.freelancer_id);
-      const { data: savedPayment } = await supabaseAdmin.from("payments").select("id").eq("project_id", project.id).maybeSingle();
-      if (savedPayment) await supabaseAdmin.from("wallet_transactions").insert({ user_id: project.freelancer_id, project_id: project.id, payment_id: savedPayment.id, type: "hold", amount: projectAmount, description: "Project payment held until client accepts delivery" });
+      const { error: walletUpsertError } = await supabaseAdmin
+        .from("wallets")
+        .upsert(
+          { user_id: project.freelancer_id },
+          { onConflict: "user_id", ignoreDuplicates: true }
+        );
+
+      if (walletUpsertError) {
+        console.error("Wallet initialization error:", walletUpsertError);
+        return NextResponse.json(
+          { error: "Payment was saved, but wallet hold could not be created." },
+          { status: 500 }
+        );
+      }
+
+      const { data: wallet, error: walletFetchError } = await supabaseAdmin
+        .from("wallets")
+        .select("pending_balance")
+        .eq("user_id", project.freelancer_id)
+        .maybeSingle();
+
+      if (walletFetchError || !wallet) {
+        console.error("Wallet fetch error:", walletFetchError);
+        return NextResponse.json(
+          { error: "Payment was saved, but wallet hold could not be created." },
+          { status: 500 }
+        );
+      }
+
+      const { error: walletUpdateError } = await supabaseAdmin
+        .from("wallets")
+        .update({
+          pending_balance: Number(wallet.pending_balance || 0) + projectAmount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", project.freelancer_id);
+
+      if (walletUpdateError) {
+        console.error("Wallet update error:", walletUpdateError);
+        return NextResponse.json(
+          { error: "Payment was saved, but wallet hold could not be created." },
+          { status: 500 }
+        );
+      }
+
+      const { data: savedPayment } = await supabaseAdmin
+        .from("payments")
+        .select("id")
+        .eq("project_id", project.id)
+        .maybeSingle();
+
+      if (savedPayment) {
+        const { error: transactionError } = await supabaseAdmin
+          .from("wallet_transactions")
+          .insert({
+            user_id: project.freelancer_id,
+            project_id: project.id,
+            payment_id: savedPayment.id,
+            type: "hold",
+            amount: projectAmount,
+            description: "Project payment held until client accepts delivery",
+          });
+
+        if (transactionError) {
+          console.error("Wallet transaction error:", transactionError);
+          return NextResponse.json(
+            { error: "Payment was saved, but wallet transaction could not be recorded." },
+            { status: 500 }
+          );
+        }
+      }
     }
 
     // =========================================
