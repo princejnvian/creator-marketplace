@@ -14,6 +14,13 @@ export default async function MessagesPage() {
     redirect("/login");
   }
 
+  await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .eq("type", "message")
+    .is("read_at", null);
+
   return (
     <main className="min-h-screen bg-gray-50 text-gray-900">
 

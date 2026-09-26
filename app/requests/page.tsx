@@ -11,6 +11,13 @@ export default async function RequestsPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .eq("type", "project_request")
+    .is("read_at", null);
+
   const params = (await searchParams) || {};
   const statusFilter = ["pending", "accepted", "completed"].includes(params.status || "") ? params.status : undefined;
 

@@ -16,6 +16,13 @@ export default async function MyRequestsPage() {
     redirect("/login");
   }
 
+  await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .eq("type", "request_status")
+    .is("read_at", null);
+
   // ================= GET REQUESTS =================
 
   const { data: requests, error } = await supabase

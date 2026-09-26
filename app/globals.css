@@ -117,3 +117,24 @@ button:not(:disabled):hover, a:hover { }
   .dashboard-shell { min-height: 100dvh; }
   button, a { touch-action: manipulation; }
 }
+
+
+/* Mobile navigation drawer must escape sticky-header stacking/height constraints. */
+.youtent-mobile-menu {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100dvh !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  z-index: 2147483000 !important;
+}
+.youtent-mobile-menu > aside {
+  height: 100vh !important;
+  min-height: 100dvh !important;
+  max-height: none !important;
+}
+@supports (height: 100svh) {
+  .youtent-mobile-menu, .youtent-mobile-menu > aside { min-height: 100svh !important; }
+}

@@ -9,6 +9,12 @@ export default async function NotificationsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .is("read_at", null);
+
   const { data: notifications } = await supabase
     .from("notifications")
     .select("id, type, title, message, link, created_at, read_at")

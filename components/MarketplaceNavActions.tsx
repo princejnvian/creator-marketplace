@@ -35,8 +35,18 @@ export default function MarketplaceNavActions({ accountType }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [seenAt, setSeenAt] = useState<Record<string, string>>({});
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    try {
+      setSeenAt({
+        all: localStorage.getItem("youtent_seen_notifications_at") || "",
+        request: localStorage.getItem("youtent_seen_requests_at") || "",
+        message: localStorage.getItem("youtent_seen_messages_at") || "",
+      });
+    } catch {}
+  }, []);
 
   async function loadNotifications() {
     try {
@@ -57,11 +67,29 @@ export default function MarketplaceNavActions({ accountType }: Props) {
     return () => window.clearInterval(interval);
   }, []);
 
-  const unread = useMemo(() => items.filter((item) => !item.read_at), [items]);
-  const requestUnread = unread.filter((item) =>
-    accountType === "freelancer" ? item.type === "project_request" : item.type === "request_status"
-  ).length;
-  const messageUnread = unread.filter((item) => item.type === "message").length;
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  const isLocallyUnseen = (item: NotificationItem, bucket: string) => {
+    if (item.read_at) return false;
+    const cutoff = seenAt[bucket];
+    return !cutoff || new Date(item.created_at).getTime() > new Date(cutoff).getTime();
+  };
+
+  const unread = useMemo(() => items.filter((item) => isLocallyUnseen(item, "all")), [items, seenAt]);
+  const requestUnread = useMemo(() => items.filter((item) =>
+    (accountType === "freelancer" ? item.type === "project_request" : item.type === "request_status") && isLocallyUnseen(item, "request")
+  ).length, [items, seenAt, accountType]);
+  const messageUnread = useMemo(() => items.filter((item) => item.type === "message" && isLocallyUnseen(item, "message")).length, [items, seenAt]);
 
   async function markRead(id: string) {
     setItems((current) => current.map((item) => item.id === id ? { ...item, read_at: new Date().toISOString() } : item));
@@ -74,11 +102,16 @@ export default function MarketplaceNavActions({ accountType }: Props) {
 
   async function markAllRead(type?: string) {
     const now = new Date().toISOString();
+    const bucket = type === "request" ? "request" : type === "message" ? "message" : "all";
+    setSeenAt((current) => ({ ...current, [bucket]: now }));
+    try { localStorage.setItem(`youtent_seen_${bucket === "all" ? "notifications" : bucket + "s"}_at`, now); } catch {}
+
     setItems((current) => current.map((item) =>
       (!type || item.type === type || (type === "request" && (item.type === "project_request" || item.type === "request_status")))
         ? { ...item, read_at: item.read_at || now }
         : item
     ));
+
     await fetch("/api/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -147,9 +180,9 @@ export default function MarketplaceNavActions({ accountType }: Props) {
       <button type="button" aria-label="Open menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg text-slate-700 shadow-sm sm:hidden">☰</button>
 
       {mounted && menuOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] sm:hidden">
-          <button aria-label="Close menu" onClick={() => setMenuOpen(false)} className="absolute inset-0 bg-slate-950/40 backdrop-blur-[3px]" />
-          <aside className="absolute inset-y-0 right-0 flex h-[100dvh] w-[min(90vw,380px)] flex-col overflow-hidden bg-white shadow-[-24px_0_70px_-25px_rgba(15,23,42,.5)]">
+        <div className="youtent-mobile-menu fixed inset-0 z-[2147483000] overflow-hidden sm:hidden" style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", minHeight: "100dvh" }}>
+          <button aria-label="Close menu" onClick={() => setMenuOpen(false)} className="absolute inset-0 z-0 bg-slate-950/45 backdrop-blur-[2px]" />
+          <aside className="absolute right-0 top-0 z-10 flex h-full w-[min(92vw,390px)] max-w-full flex-col overflow-hidden bg-white shadow-[-24px_0_70px_-25px_rgba(15,23,42,.55)]" style={{ height: "100vh", minHeight: "100dvh", maxHeight: "none" }}>
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div><p className="text-xs font-black uppercase tracking-[.16em] text-blue-600">YOUTENT</p><p className="mt-0.5 text-lg font-black">Quick Access</p></div>
               <button type="button" onClick={() => setMenuOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">×</button>
