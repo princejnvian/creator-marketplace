@@ -31,7 +31,7 @@ export default function MarketplaceNav({ accountType = "client", active }: Props
       <div className="marketplace-header-main">
         <Link href="/dashboard" className="marketplace-brand" aria-label="YOUTENT Dashboard">
           <YoutentLogo className="h-10 w-10 shrink-0" priority />
-          <span>YOUTENT<span className="marketplace-brand-dot">.</span></span>
+          <span className="youtent-mobile-wordmark text-[18px] font-black tracking-[-0.045em] sm:text-[21px]">YOUTENT<span className="marketplace-brand-dot">.</span></span>
         </Link>
 
         <form action="/creators" className="marketplace-search">

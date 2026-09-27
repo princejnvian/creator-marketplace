@@ -140,20 +140,47 @@ button:not(:disabled):hover, a:hover { }
 }
 
 
-/* YOUTENT visual system: deep navy/violet background with soft logo-inspired glows.
-   Cards remain light so text stays highly readable. */
+/* YOUTENT visual system: lighter navy/slate/violet marketplace background.
+   Keep the login/auth pages deep-dark, while app pages use a softer contrast-first surface. */
 .youtent-app-bg {
   background:
-    radial-gradient(circle at 8% 0%, rgba(37, 99, 235, .26), transparent 28rem),
-    radial-gradient(circle at 92% 6%, rgba(124, 58, 237, .24), transparent 26rem),
+    radial-gradient(circle at 8% 0%, rgba(37, 99, 235, .24), transparent 28rem),
+    radial-gradient(circle at 92% 6%, rgba(124, 58, 237, .21), transparent 26rem),
     radial-gradient(circle at 48% 72%, rgba(6, 182, 212, .10), transparent 30rem),
-    linear-gradient(145deg, #080912 0%, #0d1020 44%, #130d25 100%) !important;
-  color: #f8fafc;
+    linear-gradient(145deg, #cbd9ea 0%, #e6ebf4 46%, #ddd5ee 100%) !important;
+  color: #0f172a;
 }
 .youtent-app-bg > section, .youtent-app-bg > div { position: relative; }
+/* Do not globally recolor Tailwind text utilities: white cards use dark text,
+   while page-level text keeps its normal slate contrast. */
+.youtent-app-bg .text-white { color: #fff; }
 .youtent-app-bg .text-slate-950, .youtent-app-bg .text-slate-900 { color: #0f172a; }
+.youtent-app-bg .text-slate-700 { color: #334155; }
 .youtent-app-bg .text-slate-600 { color: #475569; }
 .youtent-app-bg .text-slate-500 { color: #64748b; }
+.youtent-app-bg .text-slate-400 { color: #94a3b8; }
 @media (max-width: 639px) {
   .youtent-app-bg { background-attachment: scroll; }
+}
+
+/* Profile/app surfaces use the same YOUTENT gradient family without forcing
+   dark text to become white. */
+.youtent-profile-bg {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(37,99,235,.20), transparent 25rem),
+    radial-gradient(circle at 92% 8%, rgba(124,58,237,.17), transparent 24rem),
+    linear-gradient(145deg, #cbd9ea 0%, #e7ecf5 52%, #ddd6ee 100%) !important;
+}
+
+
+/* Consistent YOUTENT app background: slightly stronger navy presence while preserving readable light surfaces. */
+.youtent-profile-bg {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(37,99,235,.20), transparent 25rem),
+    radial-gradient(circle at 92% 8%, rgba(124,58,237,.17), transparent 24rem),
+    linear-gradient(145deg, #cbd9ea 0%, #e7ecf5 52%, #ddd6ee 100%) !important;
+}
+
+@media (max-width: 639px) {
+  .youtent-mobile-wordmark { display: inline-flex !important; }
 }

@@ -77,7 +77,7 @@ export default function MarketplaceHeader({
       <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-4 px-4 sm:px-5 lg:px-8">
         <Link href="/dashboard" className="group flex shrink-0 items-center gap-2.5">
           <YoutentLogo className="h-10 w-10 shrink-0" priority />
-          <span className="hidden text-[21px] font-black tracking-[-0.045em] text-slate-950 sm:block">
+          <span className="youtent-mobile-wordmark text-[18px] font-black tracking-[-0.045em] text-slate-950 sm:text-[21px]">
             YOUTENT<span className="text-blue-600">.</span>
           </span>
         </Link>

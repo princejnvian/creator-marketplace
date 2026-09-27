@@ -186,12 +186,12 @@ export default function ProfilePage() {
     finally { setSaving(false); }
   }
 
-  if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl"><div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" /><p className="mt-4 text-sm font-semibold text-slate-500">Loading your profile...</p></div></main>;
+  if (loading) return <main className="flex min-h-screen items-center justify-center youtent-app-bg"><div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl"><div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" /><p className="mt-4 text-sm font-semibold text-slate-500">Loading your profile...</p></div></main>;
 
   const profileScore = Math.min(100, (fullName ? 15 : 0) + (username ? 15 : 0) + (bio ? 15 : 0) + (avatarUrl ? 15 : 0) + (skills.length ? 15 : 0) + (accountType === "freelancer" && selectedCategories.length ? 15 : 10) + (accountType === "freelancer" && portfolio.length ? 5 : 0));
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_10%_0%,rgba(59,130,246,0.10),transparent_28%),radial-gradient(circle_at_90%_8%,rgba(124,58,237,0.09),transparent_25%),linear-gradient(180deg,#f5f8fc 0%,#edf3f9 55%,#f7f9fc 100%)] text-slate-950">
+    <main className="min-h-screen youtent-app-bg text-slate-950">
       <MarketplaceHeader accountType={accountType} />
       <section className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-8">
         <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">

@@ -49,7 +49,7 @@ export default async function PaymentPage({ params }: Props) {
     project.freelancer_id !== user.id
   ) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 text-gray-900">
+      <main className="flex min-h-screen items-center justify-center youtent-app-bg px-6 text-gray-900">
         <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
           <h1 className="text-2xl font-bold text-gray-900">
             Access Denied
@@ -73,7 +73,7 @@ export default async function PaymentPage({ params }: Props) {
   // Only client can pay
   if (project.client_id !== user.id) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 text-gray-900">
+      <main className="flex min-h-screen items-center justify-center youtent-app-bg px-6 text-gray-900">
         <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-yellow-50 text-3xl">
             🔒
@@ -101,7 +101,7 @@ export default async function PaymentPage({ params }: Props) {
   // Invalid budget
   if (project.budget === null || Number(project.budget) <= 0) {
     return (
-      <main className="min-h-screen bg-gray-50 text-gray-900">
+      <main className="min-h-screen youtent-app-bg text-gray-900">
         <nav className="border-b border-gray-200 bg-white">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
             <YoutentLogo href="/dashboard" />
@@ -168,7 +168,7 @@ export default async function PaymentPage({ params }: Props) {
   // Payment already completed
   if (payment?.status === "paid") {
     return (
-      <main className="min-h-screen bg-gray-50 text-gray-900">
+      <main className="min-h-screen youtent-app-bg text-gray-900">
         <nav className="border-b border-gray-200 bg-white">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
             <YoutentLogo href="/dashboard" />
@@ -227,7 +227,7 @@ export default async function PaymentPage({ params }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900">
+    <main className="min-h-screen youtent-app-bg text-gray-900">
       {/* Navbar */}
       <nav className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">

@@ -288,7 +288,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+      <main className="youtent-app-bg flex min-h-screen items-center justify-center text-slate-900">
         <div className="text-center">
 
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
@@ -312,7 +312,7 @@ export default function ProfilePage() {
     (skills.length > 0 ? 15 : 0);
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="youtent-app-bg min-h-screen text-slate-900">
 
       {/* ================= NAVBAR ================= */}
 

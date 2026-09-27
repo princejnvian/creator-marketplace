@@ -47,7 +47,7 @@ export default async function FilesPage({ params }: Props) {
     project.freelancer_id !== user.id
   ) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 text-slate-900">
+      <main className="flex min-h-screen items-center justify-center youtent-app-bg px-6 text-slate-900">
         <div className="w-full max-w-md rounded-3xl border border-red-100 bg-white p-8 text-center shadow-xl shadow-slate-200/50">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl">
             🔒
@@ -144,7 +144,7 @@ export default async function FilesPage({ params }: Props) {
   const fileCount = filesWithUrls.length;
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen youtent-app-bg text-slate-900">
 
       {/* Decorative background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
