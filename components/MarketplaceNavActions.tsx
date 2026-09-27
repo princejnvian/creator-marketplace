@@ -161,7 +161,7 @@ export default function MarketplaceNavActions({ accountType }: Props) {
           <div className="absolute right-0 top-12 z-[120] w-[min(390px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_-24px_rgba(15,23,42,.35)]">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div><p className="text-sm font-black text-slate-950">Notifications</p><p className="text-xs text-slate-500">{unread.length ? `${unread.length} unread` : "You're all caught up"}</p></div>
-              {unread.length > 0 && <button type="button" onClick={markAllRead} className="text-xs font-bold text-blue-600">Mark all read</button>}
+              {unread.length > 0 && <button type="button" onClick={() => void markAllRead()} className="text-xs font-bold text-blue-600">Mark all read</button>}
             </div>
             <div className="max-h-[420px] overflow-y-auto">
               {loading ? <div className="px-4 py-8 text-center text-sm text-slate-500">Loading notifications...</div> : items.length === 0 ? (
