@@ -68,7 +68,7 @@ async function resolveGigMedia(gigs: import("@/lib/gigs").CreatorGig[]) {
     "/storage/v1/object/authenticated/portfolio-media/",
   ];
 
-  function getPath(media: { path?: string; url?: string }) {
+  function getPath(media: Pick<import("@/lib/gigs").GigMedia, "path" | "url">) {
     if (media.path) return media.path;
     const raw = media.url || "";
     for (const marker of markerPatterns) {
@@ -96,10 +96,10 @@ async function resolveGigMedia(gigs: import("@/lib/gigs").CreatorGig[]) {
     if (url) signedByPath.set(path, url);
   });
 
-  const signMedia = (media: { path?: string; url?: string }) => {
+  const signMedia = (media: import("@/lib/gigs").GigMedia): import("@/lib/gigs").GigMedia => {
     const path = getPath(media);
     const signedUrl = path ? signedByPath.get(path) : undefined;
-    return signedUrl ? { ...media, path, url: signedUrl } : { ...media, path: path || media.path };
+    return { ...media, path: path || media.path, url: signedUrl || media.url };
   };
 
   return gigs.map((gig) => ({
