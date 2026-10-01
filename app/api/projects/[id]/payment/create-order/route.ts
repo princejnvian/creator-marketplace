@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     }
 
     const amount = Number(project.budget);
-    const platformFee = 50;
+    const platformFee = calculatePlatformFee(amount);
     const totalAmount = amount + platformFee;
 
     if (!Number.isFinite(amount) || amount <= 0) {

@@ -1,7 +1,16 @@
 import Link from "next/link";
 
 import YoutentLogo from "@/components/YoutentLogo";
-export default function Home() {
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { normalizeGigs, packagePriceRange } from "@/lib/gigs";
+export default async function Home() {
+  const { data: creators } = await supabaseAdmin
+    .from("profiles")
+    .select("id, full_name, username, bio, avatar_url, skills, starting_price, gigs, service_packages, primary_category, categories, last_seen_at")
+    .eq("account_type", "freelancer")
+    .order("created_at", { ascending: false })
+    .limit(12);
+
   return (
     <main className="min-h-screen w-full overflow-x-hidden youtent-app-bg text-slate-950">
 
@@ -261,6 +270,74 @@ export default function Home() {
         </div>
       </section>
 
+
+      {/* ================= PUBLIC GIG MARKETPLACE ================= */}
+      <section id="creators" className="border-t border-slate-200 bg-slate-50/70 px-5 py-20 sm:px-6 md:py-24 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div>
+              <span className="text-sm font-bold uppercase tracking-[0.18em] text-blue-600">Browse gigs without login</span>
+              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Find a service, then meet the creator.</h2>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">Browse real gigs, packages and starting prices first. Open a gig to see the creator and place an order.</p>
+            </div>
+            <Link href="/creators" className="inline-flex w-fit rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white hover:bg-blue-600">View all gigs →</Link>
+          </div>
+
+          {creators?.length ? (
+            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {creators.flatMap((creator: any) => {
+                const name = creator.full_name || creator.username || "Freelancer";
+                const creatorUrl = `/creators/${creator.username || creator.id}`;
+                const gigs = normalizeGigs(creator.gigs, creator.service_packages, creator.primary_category || creator.categories?.[0]);
+                const online = Boolean(creator.last_seen_at) && Date.now() - new Date(creator.last_seen_at).getTime() < 2 * 60 * 1000;
+                return gigs.map((gig) => ({ creator, name, creatorUrl, online, gig }));
+              }).slice(0, 9).map(({ creator, name, creatorUrl, online, gig }) => {
+                const range = packagePriceRange(gig);
+                const media = gig.media?.[0];
+                return (
+                  <article key={`${creator.id}-${gig.id}`} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
+                    <Link href={`${creatorUrl}#gig-${encodeURIComponent(gig.id)}`} className="block">
+                      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-blue-100 via-indigo-100 to-violet-100">
+                        {media?.url && media.mediaType === "image" ? (
+                          <img src={media.url} alt={media.title || gig.title} className="h-full w-full object-cover transition duration-300 hover:scale-105" />
+                        ) : media?.url && media.mediaType === "video" ? (
+                          <video src={media.url} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-4xl text-blue-300">✦</div>
+                        )}
+                        <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black text-slate-700 shadow-sm">{gig.category}</div>
+                      </div>
+                      <div className="p-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="line-clamp-2 text-base font-black leading-6 text-slate-950">{gig.title}</h3>
+                            <div className="mt-2 flex items-center gap-2">
+                              {creator.avatar_url ? <img src={creator.avatar_url} alt={name} className="h-7 w-7 rounded-full object-cover" /> : <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-violet-600 text-[10px] font-black text-white">{name.charAt(0).toUpperCase()}</span>}
+                              <span className="truncate text-xs font-bold text-slate-600">{name}</span>
+                              <span className={`h-2 w-2 rounded-full ${online ? "bg-emerald-500" : "bg-slate-400"}`} title={online ? "Online" : "Offline"} />
+                            </div>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">From</p>
+                            <p className="text-lg font-black text-slate-950">₹{range.min.toLocaleString("en-IN")}</p>
+                          </div>
+                        </div>
+                        {gig.packages[0]?.scope && <p className="mt-3 line-clamp-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">{gig.packages[0].scope}</p>}
+                        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
+                          <span className="text-xs font-bold text-slate-500">{gig.packages.length} package{gig.packages.length === 1 ? "" : "s"} · Basic / Standard / Premium</span>
+                          <span className="text-xs font-black text-blue-600">View gig →</span>
+                        </div>
+                      </div>
+                    </Link>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-10 rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">Gigs will appear here as freelancers publish their services.</div>
+          )}
+        </div>
+      </section>
 
       {/* ================= HOW IT WORKS ================= */}
       <section

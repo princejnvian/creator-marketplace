@@ -58,12 +58,6 @@ type RazorpayConstructor = new (
   options: RazorpayOptions
 ) => RazorpayInstance;
 
-declare global {
-  interface Window {
-    Razorpay: RazorpayConstructor;
-  }
-}
-
 type Props = {
   projectId: string;
   amount: number;
@@ -75,13 +69,13 @@ export default function PaymentButton({
   projectId,
   amount,
   projectTitle,
-  platformFee = 50,
+  platformFee = 0,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   async function loadRazorpayScript(): Promise<boolean> {
-    if (window.Razorpay) {
+    if ((window as Window & { Razorpay?: RazorpayConstructor }).Razorpay) {
       return true;
     }
 
@@ -324,8 +318,11 @@ export default function PaymentButton({
       // 8. Create Razorpay Instance
       // --------------------------------
 
-      const razorpay =
-        new window.Razorpay(options);
+      const RazorpayCtor = (window as Window & { Razorpay?: RazorpayConstructor }).Razorpay;
+      if (!RazorpayCtor) {
+        throw new Error("Razorpay Checkout is unavailable. Please refresh and try again.");
+      }
+      const razorpay = new RazorpayCtor(options);
 
       // --------------------------------
       // 9. Payment Failed
@@ -333,7 +330,7 @@ export default function PaymentButton({
 
       razorpay.on(
         "payment.failed",
-        function (failedResponse) {
+        function (failedResponse: RazorpayFailedResponse) {
           console.error(
             "Payment failed:",
             failedResponse

@@ -96,7 +96,7 @@ export default async function DashboardPage() {
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
               {isFreelancer
-                ? "Manage your projects, requests and creator profile from one place."
+                ? "Manage your projects and creator profile from one place."
                 : "Manage your projects and discover talented creators for your next idea."}
             </p>
           </div>

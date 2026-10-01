@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { calculatePlatformFee } from "@/lib/platform-fee";
 
 export async function POST(request: Request) {
   try {
@@ -82,7 +83,7 @@ if (existingPayment?.status === "paid") {
 
     // Validate budget
     const amount = Number(project.budget);
-    const platformFee = 50;
+    const platformFee = calculatePlatformFee(amount);
     const totalAmount = amount + platformFee;
 
     if (!Number.isFinite(amount) || amount <= 0) {

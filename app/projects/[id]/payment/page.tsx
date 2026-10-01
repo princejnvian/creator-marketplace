@@ -162,7 +162,7 @@ export default async function PaymentPage({ params }: Props) {
   }
 
   const amount = Number(project.budget);
-  const platformFee = 50;
+  const platformFee = calculatePlatformFee(amount);
   const totalAmount = amount + platformFee;
 
   // Payment already completed

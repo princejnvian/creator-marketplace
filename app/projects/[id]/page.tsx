@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 import YoutentLogo from "@/components/YoutentLogo";
+import DeleteCompletedProjectButton from "@/components/DeleteCompletedProjectButton";
 type Props = {
   params: Promise<{
     id: string;
@@ -554,6 +555,7 @@ export default async function ProjectPage({ params, searchParams }: Props) {
             <div className="flex gap-2">
               {isClient && <Link href={`/projects/${project.id}/review`} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white hover:bg-emerald-700">Leave Review</Link>}
               {!isClient && <Link href="/wallet" className="rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black text-white hover:bg-blue-600">Open Wallet</Link>}
+              <DeleteCompletedProjectButton projectId={project.id} />
             </div>
           </div>
         )}

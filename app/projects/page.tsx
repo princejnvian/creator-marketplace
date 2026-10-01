@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
+import DeleteCompletedProjectButton from "@/components/DeleteCompletedProjectButton";
 
 export default async function ProjectsPage({ searchParams }: { searchParams?: Promise<{ status?: string }> }) {
   const supabase = await createClient();
@@ -69,7 +70,10 @@ export default async function ProjectsPage({ searchParams }: { searchParams?: Pr
                   <div className="rounded-2xl bg-slate-50/90 p-3.5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Budget</p><p className="mt-1 font-black">₹{Number(project.budget || 0).toLocaleString("en-IN")}</p></div>
                   <div className="rounded-2xl bg-slate-50/90 p-3.5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Deadline</p><p className="mt-1 font-black">{project.deadline ? new Date(project.deadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not set"}</p></div>
                 </div>
-                <Link href={`/projects/${project.id}`} className="relative mt-4 flex h-11 items-center justify-center rounded-xl bg-slate-950 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-600">Open Project <span className="ml-2">→</span></Link>
+                <div className="relative mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <Link href={`/projects/${project.id}`} className="flex h-11 items-center justify-center rounded-xl bg-slate-950 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-600">Open Project <span className="ml-2">→</span></Link>
+                  {project.status === "completed" && <DeleteCompletedProjectButton projectId={project.id} />}
+                </div>
               </article>
             ))}
           </div>

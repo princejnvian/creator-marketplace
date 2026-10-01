@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 import YoutentLogo from "@/components/YoutentLogo";
 export default function LoginPage() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,7 +59,7 @@ export default function LoginPage() {
     setSuccess("Login successful! Redirecting...");
 
     setTimeout(() => {
-      window.location.href = "/dashboard";
+      window.location.href = nextPath.startsWith("/") ? nextPath : "/dashboard";
     }, 800);
   }
 
@@ -373,8 +376,14 @@ export default function LoginPage() {
                 </Link>
               </p>
 
+              <div className="mt-6 text-center text-[11px] text-slate-400">
+                <Link href="/terms" className="font-bold text-slate-500 hover:text-blue-600">Terms of Service</Link>
+                <span className="mx-2">•</span>
+                <Link href="/privacy" className="font-bold text-slate-500 hover:text-blue-600">Privacy Policy</Link>
+              </div>
+
               {/* Tagline */}
-              <div className="mt-8 border-t border-slate-100 pt-5 text-center">
+              <div className="mt-5 border-t border-slate-100 pt-5 text-center">
                 <p className="text-xs font-medium tracking-wide text-slate-400">
                   Where Talent Meets Opportunity
                 </p>

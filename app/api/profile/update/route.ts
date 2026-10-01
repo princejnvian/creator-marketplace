@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { normalizeGigs } from "@/lib/gigs";
 
 const allowedAccountTypes = ["client", "freelancer"] as const;
 
@@ -87,12 +88,32 @@ export async function POST(request: Request) {
         ? body.servicePackages.slice(0, 3).map((item: any) => ({
             id: typeof item?.id === "string" ? item.id : "",
             name: typeof item?.name === "string" ? item.name.trim() : "",
-            description: typeof item?.description === "string" ? item.description.trim().slice(0, 500) : "",
+            description: typeof item?.description === "string" ? item.description.trim().slice(0, 700) : "",
+            scope: typeof item?.scope === "string" ? item.scope.trim().slice(0, 250) : "",
+            includes: typeof item?.includes === "string" ? item.includes.trim().slice(0, 700) : "",
             price: Math.max(0, Number(item?.price) || 0),
             deliveryDays: Math.max(1, Number(item?.deliveryDays) || 1),
             revisions: Math.max(0, Number(item?.revisions) || 0),
           }))
         : [];
+
+    const normalizedGigs = normalizeGigs(body.gigs, servicePackages, primaryCategory || categories[0]);
+    const gigs = normalizedGigs.slice(0, 20).map((gig) => ({
+      id: gig.id,
+      title: gig.title.slice(0, 120),
+      category: gig.category.slice(0, 80),
+      description: gig.description.slice(0, 700),
+      packages: gig.packages.slice(0, 3).map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        scope: item.scope || "",
+        includes: item.includes || "",
+        price: Math.max(0, Number(item.price) || 0),
+        deliveryDays: Math.max(1, Math.min(365, Number(item.deliveryDays) || 1)),
+        revisions: Math.max(0, Math.min(50, Number(item.revisions) || 0)),
+      })),
+    })).filter((gig) => gig.title && gig.packages.length);
 
     const portfolio =
       Array.isArray(body.portfolio)
@@ -287,7 +308,8 @@ export async function POST(request: Request) {
             categories: accountType === "freelancer" ? categories : [],
             primary_category: accountType === "freelancer" ? primaryCategory || null : null,
             starting_price: accountType === "freelancer" ? startingPrice : null,
-            service_packages: accountType === "freelancer" ? servicePackages : [],
+            service_packages: accountType === "freelancer" ? (gigs[0]?.packages || servicePackages) : [],
+            gigs: accountType === "freelancer" ? gigs : [],
             portfolio: accountType === "freelancer" ? portfolio : [],
             avatar_url: avatarUrl,
             updated_at: new Date().toISOString(),
@@ -297,7 +319,7 @@ export async function POST(request: Request) {
           }
         )
         .select(
-          "id, full_name, username, bio, account_type, skills, categories, primary_category, starting_price, service_packages, portfolio, avatar_url"
+          "id, full_name, username, bio, account_type, skills, categories, primary_category, starting_price, service_packages, gigs, portfolio, avatar_url"
         )
         .single();
 

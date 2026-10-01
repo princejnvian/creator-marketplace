@@ -4,6 +4,7 @@ import Razorpay from "razorpay";
 
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { calculatePlatformFee } from "@/lib/platform-fee";
 
 type Props = {
   params: Promise<{
@@ -213,7 +214,7 @@ export async function POST(
     }
 
     const projectAmount = Number(project.budget);
-    const platformFee = 50;
+    const platformFee = calculatePlatformFee(projectAmount);
     const totalAmount = projectAmount + platformFee;
 
     if (

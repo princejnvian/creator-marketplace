@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { createClient } from "@/lib/supabase/client";
 
 type NotificationItem = {
   id: string;
@@ -29,8 +30,11 @@ function formatTime(value: string) {
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
+const authClient = createClient();
+
 export default function MarketplaceNavActions({ accountType }: Props) {
   const [items, setItems] = useState<NotificationItem[]>([]);
+  const [authenticated, setAuthenticated] = useState(false);
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -39,6 +43,10 @@ export default function MarketplaceNavActions({ accountType }: Props) {
 
   useEffect(() => {
     setMounted(true);
+    let active = true;
+    authClient.auth.getUser().then(({ data }) => {
+      if (active) setAuthenticated(Boolean(data.user));
+    }).catch(() => undefined);
     try {
       setSeenAt({
         all: localStorage.getItem("youtent_seen_notifications_at") || "",
@@ -46,6 +54,7 @@ export default function MarketplaceNavActions({ accountType }: Props) {
         message: localStorage.getItem("youtent_seen_messages_at") || "",
       });
     } catch {}
+    return () => { active = false; };
   }, []);
 
   async function loadNotifications() {
@@ -62,10 +71,15 @@ export default function MarketplaceNavActions({ accountType }: Props) {
   }
 
   useEffect(() => {
+    if (!authenticated) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
     loadNotifications();
     const interval = window.setInterval(loadNotifications, 10000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [authenticated]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -141,49 +155,60 @@ export default function MarketplaceNavActions({ accountType }: Props) {
         Browse Creators
       </Link>
 
-      <Link href={requestsHref} onClick={() => { if (requestUnread) void markAllRead("request"); }} className="relative hidden rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 md:inline-flex">
-        {accountType === "freelancer" ? "Requests" : "My Requests"}
-        {requestUnread > 0 && <Badge count={requestUnread} />}
-      </Link>
+      {!authenticated ? (
+        <div className="hidden items-center gap-2 sm:flex">
+          <Link href="/login" className="rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100">Log in</Link>
+          <Link href="/signup" className="rounded-xl bg-slate-950 px-3.5 py-2.5 text-sm font-black text-white hover:bg-blue-600">Sign up</Link>
+        </div>
+      ) : (
+        <>
+          <Link href="/dashboard/messages" onClick={() => { if (messageUnread) void markAllRead("message"); }} aria-label={`Messages${messageUnread ? `, ${messageUnread} unread` : ""}`} className="relative flex h-10 w-10 items-center justify-center rounded-xl text-base text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
+            ✉
+            {messageUnread > 0 && <Badge count={messageUnread} />}
+          </Link>
 
-      <Link href="/dashboard/messages" onClick={() => { if (messageUnread) void markAllRead("message"); }} aria-label={`Messages${messageUnread ? `, ${messageUnread} unread` : ""}`} className="relative flex h-10 w-10 items-center justify-center rounded-xl text-base text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
-        ✉
-        {messageUnread > 0 && <Badge count={messageUnread} />}
-      </Link>
+          <div className="relative">
+            <button type="button" aria-label={`Notifications${unread.length ? `, ${unread.length} unread` : ""}`} onClick={openNotifications} className="relative flex h-10 w-10 items-center justify-center rounded-xl text-base text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
+              🔔
+              {unread.length > 0 && <Badge count={unread.length} />}
+            </button>
 
-      <div className="relative">
-        <button type="button" aria-label={`Notifications${unread.length ? `, ${unread.length} unread` : ""}`} onClick={openNotifications} className="relative flex h-10 w-10 items-center justify-center rounded-xl text-base text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
-          🔔
-          {unread.length > 0 && <Badge count={unread.length} />}
-        </button>
-
-        {open && (
-          <div className="absolute right-0 top-12 z-[120] w-[min(390px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_-24px_rgba(15,23,42,.35)]">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <div><p className="text-sm font-black text-slate-950">Notifications</p><p className="text-xs text-slate-500">{unread.length ? `${unread.length} unread` : "You're all caught up"}</p></div>
-              {unread.length > 0 && <button type="button" onClick={() => void markAllRead()} className="text-xs font-bold text-blue-600">Mark all read</button>}
-            </div>
-            <div className="max-h-[420px] overflow-y-auto">
-              {loading ? <div className="px-4 py-8 text-center text-sm text-slate-500">Loading notifications...</div> : items.length === 0 ? (
-                <div className="px-4 py-10 text-center"><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg">🔔</div><p className="mt-3 text-sm font-bold text-slate-800">No notifications yet</p><p className="mt-1 text-xs text-slate-500">New requests, messages and updates will appear here.</p></div>
-              ) : items.map((item) => (
-                <Link key={item.id} href={item.link || "/notifications"} onClick={() => { if (!item.read_at) markRead(item.id); setOpen(false); }} className={`block border-b border-slate-100 px-4 py-3.5 transition hover:bg-slate-50 ${!item.read_at ? "bg-blue-50/55" : "bg-white"}`}>
-                  <div className="flex gap-3"><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${!item.read_at ? "bg-red-500" : "bg-slate-300"}`} /><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold text-slate-900">{item.title}</p><span className="shrink-0 text-[10px] font-semibold text-slate-400">{formatTime(item.created_at)}</span></div><p className="mt-1 text-xs leading-5 text-slate-500">{item.message}</p></div></div>
-                </Link>
-              ))}
-            </div>
-            <Link href="/notifications" onClick={() => setOpen(false)} className="block border-t border-slate-100 px-4 py-3 text-center text-xs font-black text-blue-600 hover:bg-slate-50">View all notifications →</Link>
+            {open && (
+              <div className="absolute right-0 top-12 z-[120] w-[min(390px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_-24px_rgba(15,23,42,.35)]">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <div><p className="text-sm font-black text-slate-950">Notifications</p><p className="text-xs text-slate-500">{unread.length ? `${unread.length} unread` : "You're all caught up"}</p></div>
+                  {unread.length > 0 && <button type="button" onClick={() => void markAllRead()} className="text-xs font-bold text-blue-600">Mark all read</button>}
+                </div>
+                <div className="max-h-[420px] overflow-y-auto">
+                  {loading ? <div className="px-4 py-8 text-center text-sm text-slate-500">Loading notifications...</div> : items.length === 0 ? (
+                    <div className="px-4 py-10 text-center"><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg">🔔</div><p className="mt-3 text-sm font-bold text-slate-800">No notifications yet</p><p className="mt-1 text-xs text-slate-500">New requests, messages and updates will appear here.</p></div>
+                  ) : items.map((item) => (
+                    <Link key={item.id} href={item.link || "/notifications"} onClick={() => { if (!item.read_at) markRead(item.id); setOpen(false); }} className={`block border-b border-slate-100 px-4 py-3.5 transition hover:bg-slate-50 ${!item.read_at ? "bg-blue-50/55" : "bg-white"}`}>
+                      <div className="flex gap-3"><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${!item.read_at ? "bg-red-500" : "bg-slate-300"}`} /><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold text-slate-900">{item.title}</p><span className="shrink-0 text-[10px] font-semibold text-slate-400">{formatTime(item.created_at)}</span></div><p className="mt-1 text-xs leading-5 text-slate-500">{item.message}</p></div></div>
+                    </Link>
+                  ))}
+                </div>
+                <Link href="/notifications" onClick={() => setOpen(false)} className="block border-t border-slate-100 px-4 py-3 text-center text-xs font-black text-blue-600 hover:bg-slate-50">View all notifications →</Link>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <Link href="/profile" className="hidden rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:inline-flex">My Profile</Link>
+          <Link href="/profile" className="hidden rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:inline-flex">My Profile</Link>
 
-      <form action="/auth/signout" method="post" className="hidden sm:block">
-        <button className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">Log out</button>
-      </form>
+          <form action="/auth/signout" method="post" className="hidden sm:block">
+            <button className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">Log out</button>
+          </form>
+        </>
+      )}
 
-      <button type="button" aria-label="Open menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg text-slate-700 shadow-sm sm:hidden">☰</button>
+      {!authenticated ? (
+        <div className="flex items-center gap-1.5 sm:hidden">
+          <Link href="/login" className="rounded-lg px-2.5 py-2 text-xs font-bold text-slate-700">Log in</Link>
+          <Link href="/signup" className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white">Sign up</Link>
+        </div>
+      ) : (
+        <button type="button" aria-label="Open menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg text-slate-700 shadow-sm sm:hidden">☰</button>
+      )}
 
       {mounted && menuOpen && createPortal(
         <div
@@ -219,7 +244,6 @@ export default function MarketplaceNavActions({ accountType }: Props) {
               <div className="mt-4 space-y-1.5">
                 <MobileLink href="/dashboard" label="Dashboard" icon="⌂" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/creators" label="Browse Creators" icon="✦" onClick={() => setMenuOpen(false)} />
-                <MobileLink href={requestsHref} label={accountType === "freelancer" ? "Project Requests" : "My Requests"} icon="📥" badge={requestUnread} onClick={() => { if (requestUnread) void markAllRead("request"); setMenuOpen(false); }} />
                 <MobileLink href="/projects" label="My Projects" icon="▣" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/projects?status=pending_payment" label="Pending Projects" icon="⏳" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/projects?status=active" label="Active Projects" icon="⚡" onClick={() => setMenuOpen(false)} />
@@ -229,7 +253,7 @@ export default function MarketplaceNavActions({ accountType }: Props) {
                 <MobileLink href="/profile" label="My Profile" icon="◉" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/wallet" label="Wallet" icon="₹" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/faq" label="FAQ & Help" icon="?" onClick={() => setMenuOpen(false)} />
-                <MobileLink href="/contact" label="Contact Support" icon="✆" onClick={() => setMenuOpen(false)} />
+                <MobileLink href="/contact" label="Contact Support" icon="✆" onClick={() => setMenuOpen(false)} />\n                <form action="/auth/signout" method="post" className="pt-1">\n                  <button type="submit" className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-bold text-red-600 transition hover:bg-red-50"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-sm">↪</span><span className="flex-1">Log out</span><span className="text-red-200">→</span></button>\n                </form>
               </div>
             </div>
 

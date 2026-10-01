@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import HireForm from "./HireForm";
+import GigPackages from "./GigPackages";
+import { normalizeGigs } from "@/lib/gigs";
+import type { ServicePackage } from "@/lib/gigs";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 import MessageCreatorButton from "./MessageCreatorButton";
 import PortfolioLightbox from "./PortfolioLightbox";
@@ -15,14 +18,7 @@ type PortfolioItem = {
   category?: string;
 };
 
-type ServicePackage = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  deliveryDays: number;
-  revisions: number;
-};
+
 
 type Props = { params: Promise<{ username: string }> };
 
@@ -65,6 +61,48 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
+async function resolveGigMedia(gigs: import("@/lib/gigs").CreatorGig[]) {
+  const markerPatterns = [
+    "/storage/v1/object/public/portfolio-media/",
+    "/storage/v1/object/sign/portfolio-media/",
+    "/storage/v1/object/authenticated/portfolio-media/",
+  ];
+
+  function getPath(media: { path?: string; url?: string }) {
+    if (media.path) return media.path;
+    const raw = media.url || "";
+    for (const marker of markerPatterns) {
+      const index = raw.indexOf(marker);
+      if (index >= 0) {
+        const rest = raw.slice(index + marker.length).split("?")[0];
+        return decodeURIComponent(rest);
+      }
+    }
+    return "";
+  }
+
+  const all = gigs.flatMap((gig) => gig.media.map((media) => ({ gigId: gig.id, media })));
+  if (!all.length) return gigs;
+  const paths = [...new Set(all.map(({ media }) => getPath(media)).filter(Boolean))];
+  if (!paths.length) return gigs;
+
+  const { data: signed } = await supabaseAdmin.storage.from("portfolio-media").createSignedUrls(paths, 60 * 60);
+  const signedByPath = new Map<string, string>();
+  paths.forEach((path, index) => {
+    const url = signed?.[index]?.signedUrl;
+    if (url) signedByPath.set(path, url);
+  });
+
+  return gigs.map((gig) => ({
+    ...gig,
+    media: gig.media.map((media) => {
+      const path = getPath(media);
+      const signedUrl = path ? signedByPath.get(path) : undefined;
+      return signedUrl ? { ...media, path, url: signedUrl } : { ...media, path: path || media.path };
+    }),
+  }));
+}
+
 export default async function CreatorProfilePage({ params }: Props) {
   const { username } = await params;
   const cleanUsername = username.toLowerCase();
@@ -72,7 +110,7 @@ export default async function CreatorProfilePage({ params }: Props) {
   const { data: creator } = await supabaseAdmin
     .from("profiles")
     .select(
-      "id, full_name, username, bio, avatar_url, account_type, skills, categories, primary_category, starting_price, service_packages, portfolio"
+      "id, full_name, username, bio, avatar_url, account_type, skills, categories, primary_category, starting_price, service_packages, gigs, portfolio, last_seen_at"
     )
     .eq("username", cleanUsername)
     .eq("account_type", "freelancer")
@@ -81,12 +119,14 @@ export default async function CreatorProfilePage({ params }: Props) {
   if (!creator) notFound();
 
   const fullName = creator.full_name || "Creator";
+  const isOnline = Boolean(creator.last_seen_at) && Date.now() - new Date(creator.last_seen_at).getTime() < 2 * 60 * 1000;
   const skills: string[] = Array.isArray(creator.skills) ? creator.skills : [];
   const categories: string[] = Array.isArray(creator.categories) ? creator.categories : [];
   const portfolio: PortfolioItem[] = Array.isArray(creator.portfolio) ? creator.portfolio : [];
-  const packages: ServicePackage[] = Array.isArray(creator.service_packages)
-    ? creator.service_packages
-    : [];
+  const rawGigs = normalizeGigs(creator.gigs, creator.service_packages, creator.primary_category || categories[0]);
+  const gigs = await resolveGigMedia(rawGigs);
+  const firstGig = gigs[0];
+  const packages: ServicePackage[] = firstGig?.packages || [];
 
   const startingPrice =
     Number(creator.starting_price) || Number(packages[0]?.price) || 0;
@@ -130,57 +170,76 @@ export default async function CreatorProfilePage({ params }: Props) {
         </Link>
 
         <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/80 bg-white shadow-[0_24px_70px_-40px_rgba(30,64,175,.35),0_8px_24px_rgba(15,23,42,.06)] sm:rounded-[2rem]">
-          {/* Cover */}
-          <div className="relative h-36 overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 sm:h-44 md:h-48">
-            <div className="absolute -right-24 -top-28 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute -left-24 -bottom-40 h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
-            <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,.07)_45%,transparent_70%)]" />
-            <div className="absolute bottom-5 left-5 text-[10px] font-black uppercase tracking-[0.22em] text-white/75 sm:left-8 sm:text-xs">
-              YOUTENT CREATOR
-            </div>
-          </div>
+          {/* Creator hero / identity */}
+          <div className="relative min-h-[360px] overflow-hidden bg-gradient-to-br from-blue-700 via-indigo-700 to-violet-700 sm:min-h-[330px] md:min-h-[350px]">
+            <div className="absolute -right-24 -top-32 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
+            <div className="absolute -left-28 bottom-[-10rem] h-96 w-96 rounded-full bg-cyan-300/10 blur-3xl" />
+            <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,.09)_45%,transparent_70%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,.14),transparent_30%)]" />
 
-          {/* Creator identity */}
-          <div className="px-5 pb-6 sm:px-8 sm:pb-7 lg:px-10">
-            <div className="grid gap-5 pt-5 sm:grid-cols-[auto,minmax(0,1fr),auto] sm:items-center sm:gap-6">
-              <div className="relative mx-auto shrink-0 sm:mx-0">
-                {creator.avatar_url ? (
-                  <img
-                    src={creator.avatar_url}
-                    alt={fullName}
-                    className="h-28 w-28 rounded-[1.35rem] border-4 border-white object-cover shadow-xl ring-1 ring-slate-200 sm:h-32 sm:w-32"
-                  />
-                ) : (
-                  <div className="flex h-28 w-28 items-center justify-center rounded-[1.35rem] border-4 border-white bg-gradient-to-br from-blue-100 to-violet-100 text-4xl font-black text-blue-600 shadow-xl ring-1 ring-slate-200 sm:h-32 sm:w-32">
-                    {fullName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <span className="absolute bottom-2 right-2 h-5 w-5 rounded-full border-4 border-white bg-emerald-500 shadow-sm" />
-              </div>
-
-              <div className="min-w-0 text-center sm:text-left">
-                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Available for projects
+            <div className="relative flex min-h-[360px] flex-col justify-between p-5 sm:min-h-[330px] sm:p-7 lg:min-h-[350px] lg:p-9">
+              <div className="flex items-center justify-between gap-4">
+                <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-white/85 backdrop-blur">
+                  YOUTENT CREATOR
                 </span>
-                <h1 className="mt-3 truncate text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
-                  {fullName}
-                </h1>
-                <p className="mt-1 text-sm font-medium text-slate-500">
-                  @{creator.username}
-                </p>
-                <div className="mt-2 flex items-center justify-center gap-2 text-sm font-bold text-slate-700 sm:justify-start">
-                  <span className="text-amber-500">★</span>
-                  {averageRating}
-                  <span className="text-xs font-medium text-slate-400">
-                    ({reviewCount} reviews)
-                  </span>
-                </div>
+                <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold backdrop-blur ${isOnline ? "border-emerald-200/40 bg-emerald-400/15 text-emerald-50" : "border-white/20 bg-white/10 text-white/75"}`}>
+                  <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-emerald-300 shadow-[0_0_0_4px_rgba(52,211,153,.14)]" : "bg-slate-300"}`} />
+                  {isOnline ? "Online • Available for projects" : "Offline"}
+                </span>
               </div>
 
-              <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
-                <MessageCreatorButton creatorId={creator.id} />
-                <HireForm creatorId={creator.id} creatorName={fullName} />
+              <div className="grid items-end gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-end">
+                  <div className="relative shrink-0">
+                    {creator.avatar_url ? (
+                      <img
+                        src={creator.avatar_url}
+                        alt={fullName}
+                        className="h-28 w-28 rounded-[1.35rem] border-4 border-white/90 object-cover shadow-2xl ring-1 ring-white/30 sm:h-32 sm:w-32"
+                      />
+                    ) : (
+                      <div className="flex h-28 w-28 items-center justify-center rounded-[1.35rem] border-4 border-white/90 bg-white/15 text-4xl font-black text-white shadow-2xl backdrop-blur sm:h-32 sm:w-32">
+                        {fullName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span title={isOnline ? "Online" : "Offline"} className={`absolute bottom-2 right-2 h-5 w-5 rounded-full border-4 border-white ${isOnline ? "bg-emerald-500" : "bg-slate-400"}`} />
+                  </div>
+
+                  <div className="min-w-0 text-white">
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
+                      {creator.primary_category || categories[0] || "Freelance professional"}
+                    </p>
+                    <h1 className="mt-1 truncate text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">{fullName}</h1>
+                    <p className="mt-1 text-sm font-medium text-blue-100">@{creator.username}</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 font-bold backdrop-blur">
+                        <span className="text-amber-300">★</span> {averageRating}
+                        <span className="font-medium text-blue-100">({reviewCount} reviews)</span>
+                      </span>
+                      <a href="#gigs" className="rounded-full bg-white/10 px-3 py-1.5 font-bold text-blue-50 backdrop-blur transition hover:bg-white/20">
+                        {gigs.length} {gigs.length === 1 ? "gig" : "gigs"}
+                      </a>
+                      <span className="rounded-full bg-white/10 px-3 py-1.5 font-bold text-blue-50 backdrop-blur">
+                        {portfolio.length} portfolio {portfolio.length === 1 ? "item" : "items"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid w-full gap-2 sm:max-w-sm sm:grid-cols-2 lg:w-auto lg:max-w-none">
+                  <MessageCreatorButton creatorId={creator.id} />
+                  {firstGig?.packages?.length ? (
+                    <HireForm creatorId={creator.id} creatorName={fullName} gigId={firstGig.id} gigTitle={firstGig.title} packages={firstGig.packages} />
+                  ) : gigs.length ? (
+                    <a href={`#gig-${gigs[0].id}`} className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-black text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50">
+                      View gigs →
+                    </a>
+                  ) : (
+                    <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-center text-xs font-bold text-white/70 backdrop-blur">
+                      No published gig yet
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -244,6 +303,17 @@ export default async function CreatorProfilePage({ params }: Props) {
                   </div>
                 </section>
 
+                <section id="gigs" className="mt-10 scroll-mt-24">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-600">Services</p>
+                  <h2 className="mt-1 text-2xl font-black">Gigs by {fullName}</h2>
+                  <p className="mt-2 text-sm text-slate-500">Choose the exact service you need. Each gig has its own Basic, Standard and Premium packages.</p>
+                  <div className="mt-5 space-y-5">
+                    {gigs.map((gig) => (
+                      <GigPackages key={gig.id} creatorId={creator.id} creatorName={fullName} gigId={gig.id} gigTitle={gig.title} packages={gig.packages} media={gig.media} startingPrice={Number(gig.packages[0]?.price) || startingPrice} />
+                    ))}
+                  </div>
+                </section>
+
                 <section className="mt-10">
                   <div className="flex items-end justify-between gap-4">
                     <div>
@@ -294,9 +364,15 @@ export default async function CreatorProfilePage({ params }: Props) {
                               ₹{Number(item.price).toLocaleString("en-IN")}
                             </span>
                           </div>
-                          <p className="mt-2 text-xs leading-5 text-slate-500">
+                          <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-500">
                             {item.description}
                           </p>
+                          {(item.scope || item.includes) && (
+                            <div className="mt-3 space-y-2 text-xs text-slate-600">
+                              {item.scope && <p><span className="font-black text-slate-700">Scope:</span> {item.scope}</p>}
+                              {item.includes && <p className="whitespace-pre-wrap"><span className="font-black text-slate-700">Includes:</span> {item.includes}</p>}
+                            </div>
+                          )}
                           <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-slate-500">
                             <span className="rounded-full bg-white px-2.5 py-1 shadow-sm">
                               {item.deliveryDays} day delivery
@@ -319,13 +395,18 @@ export default async function CreatorProfilePage({ params }: Props) {
                       Ready to work together?
                     </p>
                     <p className="mt-2 text-sm font-semibold leading-6 text-white/95">
-                      Send a project request and discuss the exact scope.
+                      Choose a Basic, Standard or Premium package and place the order directly.
                     </p>
                     <div className="mt-4">
-                      <HireForm
-                        creatorId={creator.id}
-                        creatorName={fullName}
-                      />
+                      {packages[0] ? (
+                        <HireForm
+                          creatorId={creator.id}
+                          creatorName={fullName}
+                          gigId={firstGig.id}
+                          gigTitle={firstGig.title}
+                          packages={packages}
+                        />
+                      ) : null}
                     </div>
                   </div>
                 </div>

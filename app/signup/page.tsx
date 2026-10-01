@@ -572,19 +572,19 @@ export default function SignupPage() {
 
                     <span className="text-xs leading-5 text-slate-500">
                       I agree to YOUTENT&apos;s{" "}
-                      <a
-                        href="#"
+                      <Link
+                        href="/terms"
                         className="font-semibold text-blue-600 hover:underline"
                       >
                         Terms of Service
-                      </a>{" "}
+                      </Link>{" "}
                       and{" "}
-                      <a
-                        href="#"
+                      <Link
+                        href="/privacy"
                         className="font-semibold text-blue-600 hover:underline"
                       >
                         Privacy Policy
-                      </a>
+                      </Link>
                       .
                     </span>
                   </label>

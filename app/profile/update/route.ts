@@ -71,6 +71,32 @@ export async function POST(request: Request) {
         }))
       : [];
 
+    const gigs = Array.isArray(body.gigs)
+      ? body.gigs.slice(0, 20).map((gig: any, index: number) => ({
+          id: typeof gig?.id === "string" && gig.id ? gig.id.slice(0, 80) : crypto.randomUUID(),
+          title: typeof gig?.title === "string" ? gig.title.trim().slice(0, 120) : `Gig ${index + 1}`,
+          category: typeof gig?.category === "string" ? gig.category.trim().slice(0, 80) : categories[0] || "Creative Services",
+          description: typeof gig?.description === "string" ? gig.description.trim().slice(0, 700) : "",
+          media: Array.isArray(gig?.media) ? gig.media.slice(0, 6).map((media: any) => ({
+            id: typeof media?.id === "string" && media.id ? media.id.slice(0, 80) : crypto.randomUUID(),
+            url: typeof media?.url === "string" ? media.url.slice(0, 2000) : "",
+            mediaType: media?.mediaType === "video" ? "video" : "image",
+            title: typeof media?.title === "string" ? media.title.slice(0, 120) : "",
+            path: typeof media?.path === "string" ? media.path.slice(0, 2000) : "",
+          })).filter((media: any) => media.url) : [],
+          packages: Array.isArray(gig?.packages) ? gig.packages.slice(0, 3).map((item: any, packageIndex: number) => ({
+            id: typeof item?.id === "string" && item.id ? item.id.slice(0, 40) : ["basic", "standard", "premium"][packageIndex] || crypto.randomUUID(),
+            name: typeof item?.name === "string" && item.name.trim() ? item.name.trim().slice(0, 40) : ["Basic", "Standard", "Premium"][packageIndex] || `Package ${packageIndex + 1}`,
+            description: typeof item?.description === "string" ? item.description.slice(0, 700) : "",
+            scope: typeof item?.scope === "string" ? item.scope.slice(0, 250) : "",
+            includes: typeof item?.includes === "string" ? item.includes.slice(0, 700) : "",
+            price: Math.max(0, Number(item?.price) || 0),
+            deliveryDays: Math.max(1, Math.min(365, Number(item?.deliveryDays) || 1)),
+            revisions: Math.max(0, Math.min(50, Number(item?.revisions) || 0)),
+          })) : [],
+        })).filter((gig: any) => gig.title && gig.packages.length > 0)
+      : [];
+
     const portfolio = Array.isArray(body.portfolio)
       ? body.portfolio.slice(0, 12).map((item: any) => ({
           id: typeof item?.id === "string" ? item.id.slice(0, 80) : crypto.randomUUID(),
@@ -182,6 +208,27 @@ export async function POST(request: Request) {
         ? "freelancer"
         : "client";
 
+    const freelancerFields =
+      accountType === "freelancer"
+        ? {
+            skills,
+            categories,
+            primary_category: primaryCategory,
+            starting_price: startingPrice,
+            service_packages: servicePackages,
+            gigs,
+            portfolio,
+          }
+        : {
+            skills: [],
+            categories: [],
+            primary_category: null,
+            starting_price: null,
+            service_packages: [],
+            gigs: [],
+            portfolio: [],
+          };
+
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
       .upsert(
@@ -191,13 +238,8 @@ export async function POST(request: Request) {
           username,
           bio,
           account_type: accountType,
-          skills,
           avatar_url: avatarUrl,
-          categories,
-          primary_category: primaryCategory,
-          starting_price: startingPrice,
-          service_packages: servicePackages,
-          portfolio,
+          ...freelancerFields,
           updated_at: new Date().toISOString(),
         },
         {

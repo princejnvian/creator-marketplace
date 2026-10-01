@@ -2,33 +2,36 @@
 
 import { useMemo, useState } from "react";
 import HireForm from "./HireForm";
-
-type ServicePackage = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  deliveryDays: number;
-  revisions: number;
-};
+import type { ServicePackage, GigMedia } from "@/lib/gigs";
 
 export default function GigPackages({
   creatorId,
   creatorName,
+  gigId,
+  gigTitle,
   packages,
   startingPrice,
+  media = [],
 }: {
   creatorId: string;
   creatorName: string;
+  gigId: string;
+  gigTitle?: string;
   packages: ServicePackage[];
+  media?: GigMedia[];
   startingPrice: number;
 }) {
-  const safePackages = useMemo(() => packages.length ? packages : [{ id: "custom", name: "Custom", description: "Discuss your exact scope with this creator.", price: startingPrice, deliveryDays: 7, revisions: 1 }], [packages, startingPrice]);
+  const safePackages = useMemo(
+    () => packages.length ? packages : [{ id: "custom", name: "Custom", description: "Discuss your exact scope with this creator.", price: startingPrice, deliveryDays: 7, revisions: 1 }],
+    [packages, startingPrice]
+  );
   const [activeId, setActiveId] = useState(safePackages[0]?.id);
+  const [activeMediaId, setActiveMediaId] = useState(media[0]?.id || "");
   const active = safePackages.find((item) => item.id === activeId) || safePackages[0];
+  const activeMedia = media.find((item) => item.id === activeMediaId) || media[0];
 
   return (
-    <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_24px_70px_-38px_rgba(15,23,42,.35)]">
+    <div id={`gig-${gigId}`} className="scroll-mt-24 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_24px_70px_-38px_rgba(15,23,42,.35)]">
       <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50/80">
         {safePackages.slice(0, 3).map((item) => (
           <button key={item.id} type="button" onClick={() => setActiveId(item.id)} className={`relative px-3 py-4 text-sm font-black transition ${active.id === item.id ? "bg-white text-slate-950" : "text-slate-500 hover:text-slate-900"}`}>
@@ -38,18 +41,42 @@ export default function GigPackages({
         ))}
       </div>
 
-      <div className="relative overflow-hidden p-6">
+      <div className="relative overflow-hidden p-5 sm:p-6">
         <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-violet-100/50 blur-3xl" />
         <div className="relative">
+          {media.length > 0 && (
+            <div className="mb-6">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-sm">
+                {activeMedia?.mediaType === "video" ? (
+                  <video key={activeMedia.url} src={activeMedia.url} controls playsInline preload="metadata" className="max-h-[520px] min-h-[220px] w-full object-contain" />
+                ) : (
+                  <img key={activeMedia?.url} src={activeMedia?.url} alt={activeMedia?.title || gigTitle || "Gig media"} className="max-h-[520px] min-h-[220px] w-full object-contain" />
+                )}
+              </div>
+              {media.length > 1 && (
+                <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-6">
+                  {media.slice(0, 6).map((item) => (
+                    <button key={item.id} type="button" onClick={() => setActiveMediaId(item.id)} className={`overflow-hidden rounded-xl border-2 bg-slate-100 ${activeMedia?.id === item.id ? "border-blue-600" : "border-transparent"}`} aria-label={`View ${item.title || "gig media"}`}>
+                      {item.mediaType === "video" ? <video src={item.url} muted playsInline preload="metadata" className="aspect-video w-full object-cover" /> : <img src={item.url} alt="" className="aspect-video w-full object-cover" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="mt-2 text-xs font-semibold text-slate-400">{media.length} {media.length === 1 ? "media item" : "media items"} from this gig</p>
+            </div>
+          )}
+
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-[.16em] text-slate-400">{active.name} package</p>
+              <p className="text-xs font-black uppercase tracking-[.16em] text-slate-400">{gigTitle || "Gig"} • {active.name}</p>
               <p className="mt-2 text-3xl font-black tracking-tight">₹{Number(active.price).toLocaleString("en-IN")}</p>
             </div>
             <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-black text-emerald-700">Secure checkout</span>
           </div>
 
-          <p className="mt-4 text-sm leading-6 text-slate-600">{active.description}</p>
+          <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-600">{active.description}</p>
+          {active.scope && <p className="mt-3 text-sm leading-6 text-slate-700"><strong>Scope:</strong> {active.scope}</p>}
+          {active.includes && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700"><strong>Includes:</strong> {active.includes}</p>}
 
           <div className="mt-5 space-y-3 text-sm text-slate-700">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3"><span>Delivery</span><strong>{active.deliveryDays} days</strong></div>
@@ -58,9 +85,8 @@ export default function GigPackages({
           </div>
 
           <div className="mt-6">
-            <HireForm creatorId={creatorId} creatorName={creatorName} />
+            <HireForm creatorId={creatorId} creatorName={creatorName} gigId={gigId} gigTitle={gigTitle} packages={[active]} />
           </div>
-          <p className="mt-3 text-center text-[11px] leading-5 text-slate-400">You can discuss the exact scope before payment. YOUTENT keeps the project flow protected.</p>
         </div>
       </div>
     </div>
