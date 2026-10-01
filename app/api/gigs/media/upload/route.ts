@@ -17,8 +17,10 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file");
     const gigId = String(formData.get("gigId") || "").trim();
+    const packageId = String(formData.get("packageId") || "").trim();
     if (!(file instanceof File)) return NextResponse.json({ error: "Please select an image or video." }, { status: 400 });
     if (!gigId) return NextResponse.json({ error: "Gig ID is required." }, { status: 400 });
+    if (!packageId) return NextResponse.json({ error: "Package ID is required." }, { status: 400 });
     if (!ALLOWED.has(file.type)) return NextResponse.json({ error: "Supported formats: JPG, PNG, WEBP, GIF, MP4, WEBM and MOV." }, { status: 400 });
     if (file.size > MAX_SIZE) return NextResponse.json({ error: "Gig media must be 30MB or smaller." }, { status: 400 });
 
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
     if (profile?.account_type !== "freelancer") return NextResponse.json({ error: "Only freelancers can add gig media." }, { status: 403 });
 
     const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/-+/g, "-").slice(-80);
-    const path = `gigs/${user.id}/${gigId}/${Date.now()}-${safeName || "gig-media"}`;
+    const path = `gigs/${user.id}/${gigId}/${packageId}/${Date.now()}-${safeName || "package-media"}`;
     const bytes = new Uint8Array(await file.arrayBuffer());
     const { error: uploadError } = await supabaseAdmin.storage.from("portfolio-media").upload(path, bytes, {
       contentType: file.type,
@@ -68,13 +70,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Gig not found. Please refresh the profile and try again." }, { status: 404 });
     }
 
-    const existingMedia = Array.isArray(gigs[gigIndex]?.media) ? gigs[gigIndex].media : [];
-    if (existingMedia.length >= 6) {
+    const gig = gigs[gigIndex];
+    const packages = Array.isArray(gig?.packages) ? gig.packages.map((pkg: any) => ({ ...pkg })) : [];
+    const packageIndex = packages.findIndex((pkg: any) => pkg?.id === packageId);
+    if (packageIndex < 0) {
       await supabaseAdmin.storage.from("portfolio-media").remove([path]);
-      return NextResponse.json({ error: "You can add up to 6 photos/videos to one gig." }, { status: 400 });
+      return NextResponse.json({ error: "Package not found. Please refresh the profile and try again." }, { status: 404 });
     }
 
-    gigs[gigIndex] = { ...gigs[gigIndex], media: [...existingMedia, media] };
+    const existingMedia = Array.isArray(packages[packageIndex]?.media) ? packages[packageIndex].media : [];
+    if (existingMedia.length >= 6) {
+      await supabaseAdmin.storage.from("portfolio-media").remove([path]);
+      return NextResponse.json({ error: "You can add up to 6 photos/videos to each package." }, { status: 400 });
+    }
+
+    packages[packageIndex] = { ...packages[packageIndex], media: [...existingMedia, media] };
+    gigs[gigIndex] = { ...gig, packages };
     const { error: profileUpdateError } = await supabaseAdmin
       .from("profiles")
       .update({ gigs, updated_at: new Date().toISOString() })
@@ -92,6 +103,7 @@ export async function POST(request: Request) {
       path: media.path,
       mediaType: media.mediaType,
       name: media.title,
+      packageId,
       media,
     });
   } catch (error) {

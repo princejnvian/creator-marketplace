@@ -293,7 +293,7 @@ export default async function Home() {
                 return gigs.map((gig) => ({ creator, name, creatorUrl, online, gig }));
               }).slice(0, 9).map(({ creator, name, creatorUrl, online, gig }) => {
                 const range = packagePriceRange(gig);
-                const media = gig.media?.[0];
+                const media = gig.packages?.flatMap((pkg) => pkg.media || [])[0] || gig.media?.[0];
                 return (
                   <article key={`${creator.id}-${gig.id}`} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
                     <Link href={`${creatorUrl}#gig-${encodeURIComponent(gig.id)}`} className="block">

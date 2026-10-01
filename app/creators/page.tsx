@@ -260,7 +260,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
                         <div className="mt-2.5 grid gap-2.5">
                           {gigs.slice(0, 3).map((gig) => {
                             const range = packagePriceRange(gig);
-                            const media = gig.media?.[0];
+                            const media = gig.packages?.flatMap((pkg) => pkg.media || [])[0] || gig.media?.[0];
                             return (
                               <Link
                                 key={gig.id}

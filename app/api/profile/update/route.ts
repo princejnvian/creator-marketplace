@@ -94,6 +94,13 @@ export async function POST(request: Request) {
             price: Math.max(0, Number(item?.price) || 0),
             deliveryDays: Math.max(1, Number(item?.deliveryDays) || 1),
             revisions: Math.max(0, Number(item?.revisions) || 0),
+            media: Array.isArray(item?.media) ? item.media.slice(0, 6).map((media: any) => ({
+              id: typeof media?.id === "string" ? media.id : crypto.randomUUID(),
+              url: typeof media?.url === "string" ? media.url.trim().slice(0, 2000) : "",
+              path: typeof media?.path === "string" ? media.path.trim().slice(0, 2000) : "",
+              mediaType: media?.mediaType === "video" ? "video" : "image",
+              title: typeof media?.title === "string" ? media.title.trim().slice(0, 120) : "",
+            })).filter((media: any) => media.url || media.path) : [],
           }))
         : [];
 
@@ -119,6 +126,13 @@ export async function POST(request: Request) {
         price: Math.max(0, Number(item.price) || 0),
         deliveryDays: Math.max(1, Math.min(365, Number(item.deliveryDays) || 1)),
         revisions: Math.max(0, Math.min(50, Number(item.revisions) || 0)),
+        media: Array.isArray(item.media) ? item.media.slice(0, 6).map((media: any) => ({
+          id: typeof media?.id === "string" ? media.id : crypto.randomUUID(),
+          url: typeof media?.url === "string" ? media.url.trim().slice(0, 2000) : "",
+          path: typeof media?.path === "string" ? media.path.trim().slice(0, 2000) : "",
+          mediaType: media?.mediaType === "video" ? "video" : "image",
+          title: typeof media?.title === "string" ? media.title.trim().slice(0, 120) : "",
+        })).filter((media: any) => media.url || media.path) : [],
       })),
     })).filter((gig) => gig.title && gig.packages.length);
 

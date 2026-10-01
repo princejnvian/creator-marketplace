@@ -165,21 +165,23 @@ export default function ProfilePage() {
     setGigs((current) => current.map((gig) => gig.id === selectedGigId ? { ...gig, [field]: value } : gig));
   }
 
-  async function uploadGigMedia(file: File) {
+  async function uploadPackageMedia(file: File, packageId: string) {
     if (!selectedGigId) { setError("Select a gig first."); return; }
     const activeGig = gigs.find((gig) => gig.id === selectedGigId);
-    if (!activeGig) return;
-    if (activeGig.media.length >= 6) { setError("You can add up to 6 photos/videos to one gig."); return; }
+    const targetPackage = activeGig?.packages.find((item) => item.id === packageId);
+    if (!activeGig || !targetPackage) return;
+    if (targetPackage.media.length >= 6) { setError(`You can add up to 6 photos/videos to ${targetPackage.name}.`); return; }
     setError(""); setSuccess(""); setUploadingPortfolio(true);
     try {
       const form = new FormData();
       form.append("file", file);
       form.append("gigId", selectedGigId);
+      form.append("packageId", packageId);
       const response = await fetch("/api/gigs/media/upload", { method: "POST", body: form });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Unable to upload gig media.");
+      if (!response.ok) throw new Error(result.error || "Unable to upload package media.");
 
-      const media: GigMedia = {
+      const media: GigMedia = result.media || {
         id: crypto.randomUUID(),
         url: typeof result.url === "string" ? result.url : "",
         path: typeof result.path === "string" ? result.path : "",
@@ -188,51 +190,25 @@ export default function ProfilePage() {
       };
       if (!media.url) throw new Error("The media uploaded but no file URL was returned.");
 
-      const nextGigs = gigs.map((gig) =>
-        gig.id === selectedGigId ? { ...gig, media: [...gig.media, media] } : gig
-      );
-      setGigs(nextGigs);
-
-      // Persist the media immediately. Previously the file was uploaded to Storage
-      // but only kept in React state, so refreshing before clicking Save Profile
-      // made it disappear from the gig. Saving the full gig snapshot here keeps
-      // newly uploaded media attached to the gig across refreshes.
-      const responseSave = await fetch("/api/profile/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName,
-          username,
-          bio,
-          skills,
-          categories: selectedCategories,
-          primaryCategory,
-          startingPrice: accountType === "freelancer" ? Number(startingPrice || 0) : null,
-          servicePackages: accountType === "freelancer"
-            ? packages.map((item) => ({ ...item, price: Number(item.price || 0), deliveryDays: Number(item.deliveryDays || 0), revisions: Number(item.revisions || 0) }))
-            : [],
-          gigs: accountType === "freelancer"
-            ? nextGigs.map((gig) => ({
-                ...gig,
-                packages: gig.packages.map((item) => ({ ...item, price: Number(item.price || 0), deliveryDays: Number(item.deliveryDays || 0), revisions: Number(item.revisions || 0) })),
-              }))
-            : [],
-          portfolio: accountType === "freelancer" ? portfolio : [],
-          avatarUrl,
-        }),
-      });
-      const saveResult = await responseSave.json();
-      if (!responseSave.ok) throw new Error(saveResult.error || "Media uploaded, but the gig could not be saved.");
-
-      setSuccess("Gig media uploaded and saved. It will stay here after refresh.");
+      setGigs((current) => current.map((gig) => gig.id === selectedGigId
+        ? { ...gig, packages: gig.packages.map((item) => item.id === packageId ? { ...item, media: [...item.media, media] } : item) }
+        : gig
+      ));
+      setPackages((current) => current.map((item) => item.id === packageId ? { ...item, media: [...item.media, media] } : item));
+      setSuccess(`${targetPackage.name} media uploaded and saved.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to upload gig media.");
+      setError(err instanceof Error ? err.message : "Unable to upload package media.");
     } finally { setUploadingPortfolio(false); }
   }
 
-  function removeGigMedia(mediaId: string) {
+  function removePackageMedia(packageId: string, mediaId: string) {
     if (!selectedGigId) return;
-    setGigs((current) => current.map((gig) => gig.id === selectedGigId ? { ...gig, media: gig.media.filter((media) => media.id !== mediaId) } : gig));
+    setGigs((current) => current.map((gig) => gig.id === selectedGigId
+      ? { ...gig, packages: gig.packages.map((item) => item.id === packageId ? { ...item, media: item.media.filter((media) => media.id !== mediaId) } : item) }
+      : gig
+    ));
+    setPackages((current) => current.map((item) => item.id === packageId ? { ...item, media: item.media.filter((media) => media.id !== mediaId) } : item));
+    setSuccess("Media removed locally. Click Save Profile to confirm the removal.");
   }
 
   function addGig() {
@@ -347,15 +323,24 @@ export default function ProfilePage() {
                         </div>
                         <label className="mt-4 block text-xs font-bold uppercase tracking-wider text-slate-500">Gig description</label><textarea value={activeGig.description} onChange={(e) => updateGig("description", e.target.value)} rows={3} placeholder="Tell clients exactly what this gig is for." className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-400" />
 
-                        <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-                          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                            <div><p className="text-xs font-black uppercase tracking-widest text-violet-600">Gig media</p><p className="mt-1 text-sm font-bold text-slate-900">Add photos or videos that show this exact service.</p><p className="mt-1 text-xs text-slate-500">Up to 6 files per gig, max 30MB each. Uploads are saved automatically.</p></div>
-                            <label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-black text-white hover:bg-violet-700">{uploadingPortfolio ? "Uploading..." : "＋ Add photo / video"}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" className="hidden" disabled={uploadingPortfolio || activeGig.media.length >= 6} onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadGigMedia(file); e.currentTarget.value = ""; }} /></label>
-                          </div>
-                          {activeGig.media.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-3">{activeGig.media.map((media) => <div key={media.id} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">{media.mediaType === "video" ? <video src={media.url} controls className="aspect-video w-full object-cover" /> : <img src={media.url} alt={media.title || activeGig.title} className="aspect-video w-full object-cover" />}{<div className="flex items-center justify-between gap-2 p-2"><span className="truncate text-[10px] font-bold text-slate-500">{media.mediaType === "video" ? "VIDEO" : "IMAGE"}</span><button type="button" onClick={() => removeGigMedia(media.id)} className="text-[10px] font-black text-red-500 hover:text-red-700">Remove</button></div>}</div>)}</div>}
+                        <div className="mt-5 rounded-2xl border border-violet-100 bg-violet-50/50 p-4">
+                          <p className="text-xs font-black uppercase tracking-widest text-violet-600">Package media</p>
+                          <p className="mt-1 text-sm font-bold text-slate-900">Upload different photos/videos for Basic, Standard and Premium.</p>
+                          <p className="mt-1 text-xs text-slate-500">Each package can have up to 6 files, max 30MB each. Clients will only see the media for the package they select.</p>
                         </div>
 
-                        <div className="mt-6 grid gap-5 lg:grid-cols-3">{packages.map((item) => <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h4 className="font-black text-lg">{item.name}</h4><span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700">PACKAGE</span></div><label className="mt-4 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Package description</label><textarea value={item.description} onChange={(e) => updatePackage(item.id, "description", e.target.value)} rows={3} placeholder="Example: Edit one professional Instagram reel." className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs outline-none focus:border-blue-400" /><label className="mt-3 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Scope / quantity</label><input value={item.scope} onChange={(e) => updatePackage(item.id, "scope", e.target.value)} placeholder="1 reel up to 60 seconds" className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs outline-none focus:border-blue-400" /><label className="mt-3 block text-[10px] font-bold uppercase tracking-wider text-slate-400">What's included</label><textarea value={item.includes} onChange={(e) => updatePackage(item.id, "includes", e.target.value)} rows={3} placeholder="Captions, color correction, 1080p export..." className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs outline-none focus:border-blue-400" /><label className="mt-4 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Price (INR)</label><input type="text" inputMode="numeric" pattern="[0-9]*" value={item.price} onChange={(e) => updatePackage(item.id, "price", e.target.value.replace(/\D/g, ""))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-black outline-none focus:border-blue-400" /><div className="mt-3 grid grid-cols-2 gap-2"><div><label className="text-[10px] font-bold text-slate-400">Delivery days</label><input type="text" inputMode="numeric" pattern="[0-9]*" value={item.deliveryDays} onChange={(e) => updatePackage(item.id, "deliveryDays", e.target.value.replace(/\D/g, ""))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold outline-none" /></div><div><label className="text-[10px] font-bold text-slate-400">Revisions</label><input type="text" inputMode="numeric" pattern="[0-9]*" value={item.revisions} onChange={(e) => updatePackage(item.id, "revisions", e.target.value.replace(/\D/g, ""))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold outline-none" /></div></div></div>)}</div>
+                        <div className="mt-6 grid gap-5 lg:grid-cols-3">{packages.map((item) => <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                          <div className="flex items-center justify-between"><h4 className="font-black text-lg">{item.name}</h4><span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700">PACKAGE</span></div>
+                          <div className="mt-4 rounded-xl border border-dashed border-violet-200 bg-violet-50/60 p-3">
+                            <div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-wider text-violet-600">{item.name} media</p><p className="mt-1 text-[10px] text-slate-500">{item.media.length}/6 files</p></div><label className="inline-flex cursor-pointer items-center rounded-lg bg-violet-600 px-3 py-2 text-[10px] font-black text-white hover:bg-violet-700">{uploadingPortfolio ? "Uploading..." : "＋ Add media"}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" className="hidden" disabled={uploadingPortfolio || item.media.length >= 6} onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadPackageMedia(file, item.id); e.currentTarget.value = ""; }} /></label></div>
+                            {item.media.length > 0 && <div className="mt-3 grid grid-cols-2 gap-2">{item.media.map((media) => <div key={media.id} className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">{media.mediaType === "video" ? <video src={media.url} controls className="aspect-video w-full object-cover" /> : <img src={media.url} alt={media.title || item.name} className="aspect-video w-full object-cover" />}<div className="flex items-center justify-between gap-1 p-1.5"><span className="truncate text-[9px] font-bold text-slate-500">{media.mediaType === "video" ? "VIDEO" : "IMAGE"}</span><button type="button" onClick={() => removePackageMedia(item.id, media.id)} className="text-[9px] font-black text-red-500 hover:text-red-700">Remove</button></div></div>)}</div>}
+                          </div>
+                          <label className="mt-4 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Package description</label><textarea value={item.description} onChange={(e) => updatePackage(item.id, "description", e.target.value)} rows={3} placeholder="Example: Edit one professional Instagram reel." className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs outline-none focus:border-blue-400" />
+                          <label className="mt-3 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Scope / quantity</label><input value={item.scope} onChange={(e) => updatePackage(item.id, "scope", e.target.value)} placeholder="1 reel up to 60 seconds" className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs outline-none focus:border-blue-400" />
+                          <label className="mt-3 block text-[10px] font-bold uppercase tracking-wider text-slate-400">What's included</label><textarea value={item.includes} onChange={(e) => updatePackage(item.id, "includes", e.target.value)} rows={3} placeholder="Captions, color correction, 1080p export..." className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs outline-none focus:border-blue-400" />
+                          <label className="mt-4 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Price (INR)</label><input type="text" inputMode="numeric" pattern="[0-9]*" value={item.price} onChange={(e) => updatePackage(item.id, "price", e.target.value.replace(/\D/g, ""))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-black outline-none focus:border-blue-400" />
+                          <div className="mt-3 grid grid-cols-2 gap-2"><div><label className="text-[10px] font-bold text-slate-400">Delivery days</label><input type="text" inputMode="numeric" pattern="[0-9]*" value={item.deliveryDays} onChange={(e) => updatePackage(item.id, "deliveryDays", e.target.value.replace(/\D/g, ""))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold outline-none" /></div><div><label className="text-[10px] font-bold text-slate-400">Revisions</label><input type="text" inputMode="numeric" pattern="[0-9]*" value={item.revisions} onChange={(e) => updatePackage(item.id, "revisions", e.target.value.replace(/\D/g, ""))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold outline-none" /></div></div>
+                        </div>)}</div>
                       </div> })()}
                     </>
                   )}

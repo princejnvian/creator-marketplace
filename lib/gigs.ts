@@ -7,6 +7,7 @@ export type ServicePackage = {
   price: number | "";
   deliveryDays: number | "";
   revisions: number | "";
+  media: GigMedia[];
 };
 
 export type GigMedia = {
@@ -27,9 +28,9 @@ export type CreatorGig = {
 };
 
 export const DEFAULT_GIG_PACKAGES: ServicePackage[] = [
-  { id: "basic", name: "Basic", description: "A focused starter package for simple projects.", scope: "", includes: "", price: 499, deliveryDays: 3, revisions: 1 },
-  { id: "standard", name: "Standard", description: "A complete package for most client needs.", scope: "", includes: "", price: 1499, deliveryDays: 5, revisions: 2 },
-  { id: "premium", name: "Premium", description: "A polished end-to-end package with extra value.", scope: "", includes: "", price: 2999, deliveryDays: 7, revisions: 3 },
+  { id: "basic", name: "Basic", description: "A focused starter package for simple projects.", scope: "", includes: "", price: 499, deliveryDays: 3, revisions: 1, media: [] },
+  { id: "standard", name: "Standard", description: "A complete package for most client needs.", scope: "", includes: "", price: 1499, deliveryDays: 5, revisions: 2, media: [] },
+  { id: "premium", name: "Premium", description: "A polished end-to-end package with extra value.", scope: "", includes: "", price: 2999, deliveryDays: 7, revisions: 3, media: [] },
 ];
 
 export function normalizePackages(value: unknown): ServicePackage[] {
@@ -43,6 +44,13 @@ export function normalizePackages(value: unknown): ServicePackage[] {
     price: Math.max(0, Number(item?.price) || 0),
     deliveryDays: Math.max(1, Number(item?.deliveryDays) || 1),
     revisions: Math.max(0, Math.min(50, Number(item?.revisions) || 0)),
+    media: Array.isArray(item?.media) ? item.media.slice(0, 6).map((media: any) => ({
+      id: typeof media?.id === "string" && media.id ? media.id : crypto.randomUUID(),
+      url: typeof media?.url === "string" ? media.url.slice(0, 2000) : "",
+      mediaType: media?.mediaType === "video" ? "video" : "image",
+      title: typeof media?.title === "string" ? media.title.slice(0, 120) : "",
+      path: typeof media?.path === "string" ? media.path.slice(0, 2000) : "",
+    })).filter((media: GigMedia) => media.url || media.path) : [],
   }));
 }
 

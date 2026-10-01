@@ -81,7 +81,10 @@ async function resolveGigMedia(gigs: import("@/lib/gigs").CreatorGig[]) {
     return "";
   }
 
-  const all = gigs.flatMap((gig) => gig.media.map((media) => ({ gigId: gig.id, media })));
+  const all = gigs.flatMap((gig) => [
+    ...gig.media.map((media) => ({ gigId: gig.id, packageId: "", media })),
+    ...gig.packages.flatMap((pkg) => pkg.media.map((media) => ({ gigId: gig.id, packageId: pkg.id, media }))),
+  ]);
   if (!all.length) return gigs;
   const paths = [...new Set(all.map(({ media }) => getPath(media)).filter(Boolean))];
   if (!paths.length) return gigs;
@@ -93,13 +96,16 @@ async function resolveGigMedia(gigs: import("@/lib/gigs").CreatorGig[]) {
     if (url) signedByPath.set(path, url);
   });
 
+  const signMedia = (media: { path?: string; url?: string }) => {
+    const path = getPath(media);
+    const signedUrl = path ? signedByPath.get(path) : undefined;
+    return signedUrl ? { ...media, path, url: signedUrl } : { ...media, path: path || media.path };
+  };
+
   return gigs.map((gig) => ({
     ...gig,
-    media: gig.media.map((media) => {
-      const path = getPath(media);
-      const signedUrl = path ? signedByPath.get(path) : undefined;
-      return signedUrl ? { ...media, path, url: signedUrl } : { ...media, path: path || media.path };
-    }),
+    media: gig.media.map(signMedia),
+    packages: gig.packages.map((pkg) => ({ ...pkg, media: pkg.media.map(signMedia) })),
   }));
 }
 
