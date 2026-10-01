@@ -40,12 +40,59 @@ export async function POST(request: Request) {
     if (uploadError) return NextResponse.json({ error: "Unable to upload this gig media." }, { status: 500 });
 
     const { data } = supabaseAdmin.storage.from("portfolio-media").getPublicUrl(path);
-    return NextResponse.json({
-      success: true,
+    const media = {
+      id: crypto.randomUUID(),
       url: data.publicUrl,
       path,
       mediaType: file.type.startsWith("video/") ? "video" : "image",
-      name: file.name,
+      title: file.name,
+    };
+
+    // Persist the uploaded media on the gig itself. This is the source of truth
+    // for public gig pages, so a refresh never loses a successfully uploaded file.
+    const { data: currentProfile, error: profileReadError } = await supabaseAdmin
+      .from("profiles")
+      .select("gigs")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileReadError) {
+      await supabaseAdmin.storage.from("portfolio-media").remove([path]);
+      return NextResponse.json({ error: "Media uploaded but the gig could not be loaded for saving." }, { status: 500 });
+    }
+
+    const gigs = Array.isArray(currentProfile?.gigs) ? currentProfile.gigs.map((gig: any) => ({ ...gig })) : [];
+    const gigIndex = gigs.findIndex((gig: any) => gig?.id === gigId);
+    if (gigIndex < 0) {
+      await supabaseAdmin.storage.from("portfolio-media").remove([path]);
+      return NextResponse.json({ error: "Gig not found. Please refresh the profile and try again." }, { status: 404 });
+    }
+
+    const existingMedia = Array.isArray(gigs[gigIndex]?.media) ? gigs[gigIndex].media : [];
+    if (existingMedia.length >= 6) {
+      await supabaseAdmin.storage.from("portfolio-media").remove([path]);
+      return NextResponse.json({ error: "You can add up to 6 photos/videos to one gig." }, { status: 400 });
+    }
+
+    gigs[gigIndex] = { ...gigs[gigIndex], media: [...existingMedia, media] };
+    const { error: profileUpdateError } = await supabaseAdmin
+      .from("profiles")
+      .update({ gigs, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+
+    if (profileUpdateError) {
+      await supabaseAdmin.storage.from("portfolio-media").remove([path]);
+      console.error("Gig media profile save error:", profileUpdateError);
+      return NextResponse.json({ error: "Media uploaded but could not be attached to the gig." }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      url: media.url,
+      path: media.path,
+      mediaType: media.mediaType,
+      name: media.title,
+      media,
     });
   } catch (error) {
     console.error("Gig media upload error:", error);

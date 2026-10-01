@@ -103,6 +103,13 @@ export async function POST(request: Request) {
       title: gig.title.slice(0, 120),
       category: gig.category.slice(0, 80),
       description: gig.description.slice(0, 700),
+      media: gig.media.slice(0, 6).map((media) => ({
+        id: media.id,
+        url: media.url.slice(0, 2000),
+        path: media.path || "",
+        mediaType: media.mediaType === "video" ? "video" : "image",
+        title: media.title || "",
+      })).filter((media) => media.url || media.path),
       packages: gig.packages.slice(0, 3).map((item) => ({
         id: item.id,
         name: item.name,
