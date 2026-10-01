@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { createClient } from "@/lib/supabase/server";
+import { calculatePlatformFee } from "@/lib/platform-fee";
 
 export async function POST(request: Request) {
   try {

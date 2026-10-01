@@ -2,6 +2,7 @@ import YoutentLogo from "@/components/YoutentLogo";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { calculatePlatformFee } from "@/lib/platform-fee";
 import PaymentButton from "./PaymentButton";
 
 type Props = {

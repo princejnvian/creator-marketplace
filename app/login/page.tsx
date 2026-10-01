@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 import YoutentLogo from "@/components/YoutentLogo";
-export default function LoginPage() {
+function LoginPageContent() {
   const supabase = createClient();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/dashboard";
@@ -393,5 +393,13 @@ export default function LoginPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen youtent-app-bg" />} >
+      <LoginPageContent />
+    </Suspense>
   );
 }
