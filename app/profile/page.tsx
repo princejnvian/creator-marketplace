@@ -178,11 +178,56 @@ export default function ProfilePage() {
       const response = await fetch("/api/gigs/media/upload", { method: "POST", body: form });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to upload gig media.");
-      const media: GigMedia = { id: crypto.randomUUID(), url: result.url, path: typeof result.path === "string" ? result.path : "", mediaType: result.mediaType === "video" ? "video" : "image", title: file.name };
-      setGigs((current) => current.map((gig) => gig.id === selectedGigId ? { ...gig, media: [...gig.media, media] } : gig));
-      setSuccess("Gig media uploaded. Click Save Profile to publish the change.");
-    } catch (err) { setError(err instanceof Error ? err.message : "Unable to upload gig media."); }
-    finally { setUploadingPortfolio(false); }
+
+      const media: GigMedia = {
+        id: crypto.randomUUID(),
+        url: typeof result.url === "string" ? result.url : "",
+        path: typeof result.path === "string" ? result.path : "",
+        mediaType: result.mediaType === "video" ? "video" : "image",
+        title: file.name,
+      };
+      if (!media.url) throw new Error("The media uploaded but no file URL was returned.");
+
+      const nextGigs = gigs.map((gig) =>
+        gig.id === selectedGigId ? { ...gig, media: [...gig.media, media] } : gig
+      );
+      setGigs(nextGigs);
+
+      // Persist the media immediately. Previously the file was uploaded to Storage
+      // but only kept in React state, so refreshing before clicking Save Profile
+      // made it disappear from the gig. Saving the full gig snapshot here keeps
+      // newly uploaded media attached to the gig across refreshes.
+      const responseSave = await fetch("/api/profile/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName,
+          username,
+          bio,
+          skills,
+          categories: selectedCategories,
+          primaryCategory,
+          startingPrice: accountType === "freelancer" ? Number(startingPrice || 0) : null,
+          servicePackages: accountType === "freelancer"
+            ? packages.map((item) => ({ ...item, price: Number(item.price || 0), deliveryDays: Number(item.deliveryDays || 0), revisions: Number(item.revisions || 0) }))
+            : [],
+          gigs: accountType === "freelancer"
+            ? nextGigs.map((gig) => ({
+                ...gig,
+                packages: gig.packages.map((item) => ({ ...item, price: Number(item.price || 0), deliveryDays: Number(item.deliveryDays || 0), revisions: Number(item.revisions || 0) })),
+              }))
+            : [],
+          portfolio: accountType === "freelancer" ? portfolio : [],
+          avatarUrl,
+        }),
+      });
+      const saveResult = await responseSave.json();
+      if (!responseSave.ok) throw new Error(saveResult.error || "Media uploaded, but the gig could not be saved.");
+
+      setSuccess("Gig media uploaded and saved. It will stay here after refresh.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to upload gig media.");
+    } finally { setUploadingPortfolio(false); }
   }
 
   function removeGigMedia(mediaId: string) {
@@ -304,7 +349,7 @@ export default function ProfilePage() {
 
                         <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
                           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                            <div><p className="text-xs font-black uppercase tracking-widest text-violet-600">Gig media</p><p className="mt-1 text-sm font-bold text-slate-900">Add photos or videos that show this exact service.</p><p className="mt-1 text-xs text-slate-500">Up to 6 files per gig, max 30MB each.</p></div>
+                            <div><p className="text-xs font-black uppercase tracking-widest text-violet-600">Gig media</p><p className="mt-1 text-sm font-bold text-slate-900">Add photos or videos that show this exact service.</p><p className="mt-1 text-xs text-slate-500">Up to 6 files per gig, max 30MB each. Uploads are saved automatically.</p></div>
                             <label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-black text-white hover:bg-violet-700">{uploadingPortfolio ? "Uploading..." : "＋ Add photo / video"}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" className="hidden" disabled={uploadingPortfolio || activeGig.media.length >= 6} onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadGigMedia(file); e.currentTarget.value = ""; }} /></label>
                           </div>
                           {activeGig.media.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-3">{activeGig.media.map((media) => <div key={media.id} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">{media.mediaType === "video" ? <video src={media.url} controls className="aspect-video w-full object-cover" /> : <img src={media.url} alt={media.title || activeGig.title} className="aspect-video w-full object-cover" />}{<div className="flex items-center justify-between gap-2 p-2"><span className="truncate text-[10px] font-bold text-slate-500">{media.mediaType === "video" ? "VIDEO" : "IMAGE"}</span><button type="button" onClick={() => removeGigMedia(media.id)} className="text-[10px] font-black text-red-500 hover:text-red-700">Remove</button></div>}</div>)}</div>}
