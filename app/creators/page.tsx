@@ -80,7 +80,7 @@ function GigCard({ listing }: { listing: GigListing }) {
   const media = gig.packages.flatMap((pkg) => pkg.media || [])[0] || gig.media?.[0];
   const creatorName = creator.full_name || "Creator";
   const creatorUrl = `/creators/${creator.username || creator.id}`;
-  const gigUrl = `${creatorUrl}#gig-${encodeURIComponent(gig.id)}`;
+  const gigUrl = `${creatorUrl}?gig=${encodeURIComponent(gig.id)}#selected-gig`;
   const isOnline = Boolean(creator.last_seen_at) && Date.now() - new Date(creator.last_seen_at || 0).getTime() < 2 * 60 * 1000;
 
   return (
@@ -117,20 +117,18 @@ function GigCard({ listing }: { listing: GigListing }) {
           </div>
         )}
 
-        <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-3">
-          <Link href={creatorUrl} className="relative shrink-0" aria-label={`View ${creatorName}'s profile`}>
+        <div className="mt-4 border-t border-slate-100 pt-4 text-center">
+          <Link href={creatorUrl} className="relative mx-auto block h-11 w-11" aria-label={`View ${creatorName}'s profile`}>
             {creator.avatar_url ? (
-              <img src={creator.avatar_url} alt={creatorName} className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm" />
+              <img src={creator.avatar_url} alt={creatorName} className="h-11 w-11 rounded-full object-cover ring-2 ring-white shadow-md" />
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-violet-600 text-sm font-black text-white ring-2 ring-white shadow-sm">{creatorName.charAt(0).toUpperCase()}</div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-violet-600 text-sm font-black text-white ring-2 ring-white shadow-md">{creatorName.charAt(0).toUpperCase()}</div>
             )}
             <span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${isOnline ? "bg-emerald-500" : "bg-slate-400"}`} />
           </Link>
-          <div className="min-w-0 flex-1">
-            <Link href={creatorUrl} className="block truncate text-xs font-black text-slate-900 hover:text-blue-600">{creatorName}</Link>
-            <p className="truncate text-[10px] text-slate-500">{creator.username ? `@${creator.username}` : "YOUTENT creator"}</p>
-          </div>
-          <Link href={gigUrl} className="shrink-0 rounded-lg bg-slate-950 px-3 py-2 text-[10px] font-black text-white transition hover:bg-blue-600">View Gig</Link>
+          <Link href={creatorUrl} className="mt-2 block truncate text-xs font-black text-slate-900 hover:text-blue-600">{creatorName}</Link>
+          <p className="mt-0.5 truncate text-[10px] text-slate-500">{creator.username ? `@${creator.username}` : "YOUTENT creator"}</p>
+          <Link href={gigUrl} className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-slate-950 px-3 py-2.5 text-[10px] font-black text-white transition hover:bg-blue-600">View Gig →</Link>
         </div>
       </div>
     </article>

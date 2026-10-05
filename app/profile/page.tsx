@@ -79,9 +79,13 @@ export default function ProfilePage() {
           ? normalizeGigs(profile.gigs, profile.service_packages, profile.primary_category || profile.categories?.[0])
           : [];
         setGigs(loadedGigs);
-        const firstGig = loadedGigs[0];
-        setSelectedGigId(firstGig?.id || "");
-        setPackages(firstGig?.packages?.length ? firstGig.packages : DEFAULT_GIG_PACKAGES);
+        const editGigId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("editGig") : null;
+        const selectedGig = loadedGigs.find((gig) => String(gig.id) === String(editGigId)) || loadedGigs[0];
+        setSelectedGigId(selectedGig?.id || "");
+        setPackages(selectedGig?.packages?.length ? selectedGig.packages : DEFAULT_GIG_PACKAGES);
+        if (editGigId && selectedGig) {
+          setTimeout(() => document.getElementById("gig-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+        }
         setPortfolio(isFreelancerProfile && Array.isArray(profile.portfolio) ? profile.portfolio : []);
         setAvatarUrl(profile.avatar_url || "");
       }
@@ -292,7 +296,10 @@ export default function ProfilePage() {
       <section className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-8">
         <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div><span className="inline-flex rounded-full border border-blue-100 bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700 shadow-sm">Profile Studio</span><h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Build a profile clients remember.</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Create your identity, choose your marketplace categories, showcase your work and publish clear service pricing.</p></div>
-          <div className="profile-strength-card w-full max-w-xs rounded-2xl border border-white/80 bg-white/80 p-4 shadow-lg backdrop-blur"><div className="flex justify-between text-xs font-bold"><span>Profile strength</span><span className="text-blue-600">{profileScore}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600" style={{ width: `${profileScore}%` }} /></div></div>
+          <div className="flex w-full max-w-xs flex-col gap-3">
+            {accountType === "client" && <Link href="/projects" className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-600">My Projects →</Link>}
+            <div className="profile-strength-card rounded-2xl border border-white/80 bg-white/80 p-4 shadow-lg backdrop-blur"><div className="flex justify-between text-xs font-bold"><span>Profile strength</span><span className="text-blue-600">{profileScore}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600" style={{ width: `${profileScore}%` }} /></div></div>
+          </div>
         </div>
 
         <form onSubmit={handleSave} className="space-y-6">
@@ -320,6 +327,35 @@ export default function ProfilePage() {
                 </section>
 
                 <section className="premium-card p-6 sm:p-8">
+                  <div className="flex items-end justify-between gap-4">
+                    <div><p className="text-xs font-black uppercase tracking-widest text-emerald-600">Your gigs</p><h2 className="mt-1 text-2xl font-black">Published service tiles</h2><p className="mt-2 text-sm text-slate-500">Clients see these same tiles in the marketplace. Open a gig to preview it publicly or edit it below.</p></div>
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">{gigs.length} {gigs.length === 1 ? "gig" : "gigs"}</span>
+                  </div>
+                  {gigs.length ? (
+                    <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {gigs.map((gig) => {
+                        const preview = gig.packages.flatMap((pkg) => pkg.media || [])[0] || gig.media?.[0];
+                        const price = gig.packages.map((pkg) => Number(pkg.price)).filter((value) => Number.isFinite(value) && value > 0).sort((a,b) => a-b)[0] || 0;
+                        return <article key={gig.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                          <Link href={`/creators/${encodeURIComponent(username || "")}?gig=${encodeURIComponent(gig.id)}#selected-gig`} target="_blank" className="group block">
+                            <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-blue-100 via-indigo-100 to-violet-100">
+                              {preview?.url && preview.mediaType === "image" ? <img src={preview.url} alt={gig.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : preview?.url && preview.mediaType === "video" ? <video src={preview.url} muted playsInline preload="metadata" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-5xl text-blue-500/50">✦</div>}
+                              <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black text-slate-700 shadow-sm">{gig.category}</span>
+                              {price > 0 && <span className="absolute right-3 top-3 rounded-full bg-slate-950/85 px-2.5 py-1 text-[10px] font-black text-white">From ₹{price.toLocaleString("en-IN")}</span>}
+                            </div>
+                            <div className="p-4"><h3 className="line-clamp-2 min-h-[44px] text-[15px] font-black leading-5 text-slate-950 group-hover:text-blue-700">{gig.title || "Untitled gig"}</h3><p className="mt-1 text-xs font-semibold text-slate-500">{gig.subcategory || gig.category}</p></div>
+                          </Link>
+                          <div className="flex items-center gap-2 border-t border-slate-100 px-4 pb-4">
+                            <button type="button" onClick={() => { selectGig(gig.id); setTimeout(() => document.getElementById("gig-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="flex-1 rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white hover:bg-blue-600">Edit Gig</button>
+                            <Link href={`/creators/${encodeURIComponent(username || "")}?gig=${encodeURIComponent(gig.id)}#selected-gig`} target="_blank" className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-black text-slate-700 hover:border-blue-200 hover:text-blue-600">View</Link>
+                          </div>
+                        </article>;
+                      })}
+                    </div>
+                  ) : <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">No gigs yet. Add your first gig below.</div>}
+                </section>
+
+                <section id="gig-editor" className="premium-card p-6 sm:p-8 scroll-mt-24">
                   <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                     <div><p className="text-xs font-black uppercase tracking-widest text-emerald-600">Gigs & pricing</p><h2 className="mt-1 text-2xl font-black">Create multiple gigs</h2><p className="mt-2 max-w-2xl text-sm text-slate-500">Create separate services for different skills. Each gig can have its own category, title and Basic, Standard and Premium pricing.</p></div>
                     <button type="button" onClick={addGig} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white hover:bg-blue-600">＋ Add new gig</button>

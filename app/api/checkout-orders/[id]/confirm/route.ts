@@ -90,7 +90,7 @@ export async function POST(
         amount: Number(checkout.package_price) + Number(checkout.platform_fee),
         project_amount: checkout.package_price,
         platform_fee: checkout.platform_fee,
-        escrow_status: "funded",
+        escrow_status: "pending",
         currency: "INR",
         status: "paid",
         payment_gateway: "razorpay",

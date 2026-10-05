@@ -177,7 +177,7 @@ export async function POST(request: Request) {
               amount: totalAmount,
               project_amount: projectAmount,
               platform_fee: platformFee,
-              escrow_status: "funded",
+              escrow_status: "pending",
               currency: "INR",
               status: "paid",
               payment_gateway: "razorpay",
@@ -221,7 +221,7 @@ export async function POST(request: Request) {
             .from("payments")
             .update({
               status: "paid",
-              escrow_status: "funded",
+              escrow_status: "pending",
               gateway_payment_id: razorpayPaymentId,
               paid_at: new Date().toISOString(),
             })

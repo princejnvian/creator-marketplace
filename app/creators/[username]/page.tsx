@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import HireForm from "./HireForm";
 import GigPackages from "./GigPackages";
-import { normalizeGigs } from "@/lib/gigs";
+import { normalizeGigs, packagePriceRange } from "@/lib/gigs";
 import type { ServicePackage } from "@/lib/gigs";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 import MessageCreatorButton from "./MessageCreatorButton";
@@ -20,7 +21,7 @@ type PortfolioItem = {
 
 
 
-type Props = { params: Promise<{ username: string }> };
+type Props = { params: Promise<{ username: string }>; searchParams?: Promise<{ gig?: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { username } = await params;
@@ -109,8 +110,11 @@ async function resolveGigMedia(gigs: import("@/lib/gigs").CreatorGig[]) {
   }));
 }
 
-export default async function CreatorProfilePage({ params }: Props) {
+export default async function CreatorProfilePage({ params, searchParams }: Props) {
   const { username } = await params;
+  const query = searchParams ? await searchParams : {};
+  const viewerClient = await createClient();
+  const { data: { user: viewer } } = await viewerClient.auth.getUser();
   const cleanUsername = username.toLowerCase();
 
   const { data: creator } = await supabaseAdmin
@@ -132,7 +136,8 @@ export default async function CreatorProfilePage({ params }: Props) {
   const rawGigs = normalizeGigs(creator.gigs, creator.service_packages, creator.primary_category || categories[0]);
   const gigs = await resolveGigMedia(rawGigs);
   const firstGig = gigs[0];
-  const packages: ServicePackage[] = firstGig?.packages || [];
+  const selectedGig = query.gig ? gigs.find((gig) => String(gig.id) === String(query.gig)) : null;
+  const packages: ServicePackage[] = (selectedGig || firstGig)?.packages || [];
 
   const startingPrice =
     Number(creator.starting_price) || Number(packages[0]?.price) || 0;
@@ -310,14 +315,65 @@ export default async function CreatorProfilePage({ params }: Props) {
                 </section>
 
                 <section id="gigs" className="mt-10 scroll-mt-24">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-600">Services</p>
-                  <h2 className="mt-1 text-2xl font-black">Gigs by {fullName}</h2>
-                  <p className="mt-2 text-sm text-slate-500">Choose the exact service you need. Each gig has its own Basic, Standard and Premium packages.</p>
-                  <div className="mt-5 space-y-5">
-                    {gigs.map((gig) => (
-                      <GigPackages key={gig.id} creatorId={creator.id} creatorName={fullName} gigId={gig.id} gigTitle={gig.title} category={gig.category} subcategory={gig.subcategory} tags={gig.tags} packages={gig.packages} media={gig.media} startingPrice={Number(gig.packages[0]?.price) || startingPrice} />
-                    ))}
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-600">Services</p>
+                      <h2 className="mt-1 text-2xl font-black">Gigs by {fullName}</h2>
+                      <p className="mt-2 text-sm text-slate-500">Choose a gig to open its exact packages and place an order.</p>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm">{gigs.length} {gigs.length === 1 ? "gig" : "gigs"}</span>
                   </div>
+
+                  {gigs.length ? (
+                    <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                      {gigs.map((gig) => {
+                        const range = packagePriceRange(gig);
+                        const preview = gig.packages.flatMap((pkg) => pkg.media || [])[0] || gig.media?.[0];
+                        const href = `/creators/${encodeURIComponent(String(creator.username || username))}?gig=${encodeURIComponent(gig.id)}#selected-gig`;
+                        return (
+                          <article key={gig.id} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
+                            <Link href={href} className="block">
+                              <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-blue-100 via-indigo-100 to-violet-100">
+                                {preview?.url && preview.mediaType === "image" ? <img src={preview.url} alt={preview.title || gig.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : preview?.url && preview.mediaType === "video" ? <video src={preview.url} muted playsInline preload="metadata" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-5xl text-blue-500/50">✦</div>}
+                                <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black text-slate-700 shadow-sm">{gig.category}</span>
+                                <span className="absolute right-3 top-3 rounded-full bg-slate-950/85 px-2.5 py-1 text-[10px] font-black text-white">From ₹{range.min.toLocaleString("en-IN")}</span>
+                              </div>
+                            </Link>
+                            <div className="p-4">
+                              <Link href={href} className="block">
+                                <h3 className="line-clamp-2 min-h-[44px] text-[15px] font-black leading-5 text-slate-950 group-hover:text-blue-700">{gig.title}</h3>
+                                <p className="mt-1.5 line-clamp-1 text-xs font-semibold text-slate-500">{gig.subcategory || gig.category}</p>
+                              </Link>
+                              {gig.tags.length > 0 && <div className="mt-2.5 flex flex-wrap gap-1.5">{gig.tags.slice(0, 4).map((tag) => <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{tag}</span>)}</div>}
+                              <div className="mt-4 border-t border-slate-100 pt-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  {creator.avatar_url ? <img src={creator.avatar_url} alt={fullName} className="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow-md" /> : <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-violet-600 text-sm font-black text-white">{fullName.charAt(0).toUpperCase()}</div>}
+                                  <Link href={`/creators/${encodeURIComponent(String(creator.username || username))}`} className="mt-2 text-xs font-black text-slate-900 hover:text-blue-600">{fullName}</Link>
+                                  <p className="mt-0.5 text-[10px] text-slate-400">{creator.username ? `@${creator.username}` : "YOUTENT creator"}</p>
+                                </div>
+                                <div className="mt-3 flex items-center gap-2">
+                                  <Link href={href} className="flex-1 rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white hover:bg-blue-600">View Gig →</Link>
+                                  {viewer?.id === creator.id && <Link href={`/profile?editGig=${encodeURIComponent(gig.id)}#gig-editor`} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-black text-slate-700 hover:border-blue-200 hover:text-blue-600">Edit</Link>}
+                                </div>
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">No published gigs yet.</div>
+                  )}
+
+                  {selectedGig && (
+                    <div id="selected-gig" className="mt-7 scroll-mt-24">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Selected gig</p><h3 className="mt-1 text-xl font-black">{selectedGig.title}</h3></div>
+                        <Link href="#gigs" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 hover:text-blue-600">Back to gigs</Link>
+                      </div>
+                      <GigPackages creatorId={creator.id} creatorName={fullName} gigId={selectedGig.id} gigTitle={selectedGig.title} category={selectedGig.category} subcategory={selectedGig.subcategory} tags={selectedGig.tags} packages={selectedGig.packages} media={selectedGig.media} startingPrice={Number(selectedGig.packages[0]?.price) || startingPrice} />
+                    </div>
+                  )}
                 </section>
 
                 <section className="mt-10">
@@ -357,64 +413,17 @@ export default async function CreatorProfilePage({ params }: Props) {
                     </p>
                   </div>
 
-                  <div className="mt-4 space-y-3">
-                    {packages.length ? (
-                      packages.map((item) => (
-                        <div
-                          key={item.id}
-                          className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <h3 className="font-black">{item.name}</h3>
-                            <span className="shrink-0 text-lg font-black">
-                              ₹{Number(item.price).toLocaleString("en-IN")}
-                            </span>
-                          </div>
-                          <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-500">
-                            {item.description}
-                          </p>
-                          {(item.scope || item.includes) && (
-                            <div className="mt-3 space-y-2 text-xs text-slate-600">
-                              {item.scope && <p><span className="font-black text-slate-700">Scope:</span> {item.scope}</p>}
-                              {item.includes && <p className="whitespace-pre-wrap"><span className="font-black text-slate-700">Includes:</span> {item.includes}</p>}
-                            </div>
-                          )}
-                          <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-slate-500">
-                            <span className="rounded-full bg-white px-2.5 py-1 shadow-sm">
-                              {item.deliveryDays} day delivery
-                            </span>
-                            <span className="rounded-full bg-white px-2.5 py-1 shadow-sm">
-                              {item.revisions} revisions
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="rounded-2xl bg-slate-50 p-4 text-xs text-slate-500">
-                        Custom pricing available through a project request.
-                      </div>
-                    )}
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">{selectedGig ? "Selected gig" : "Gig marketplace"}</p>
+                    <p className="mt-2 text-sm font-bold text-slate-700">{selectedGig ? "Open the gig above to compare Basic, Standard and Premium packages." : "Choose any gig above to see its exact packages, media and order button."}</p>
                   </div>
-
-                  <div className="mt-4 rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 p-5 text-white shadow-[0_18px_35px_-20px_rgba(79,70,229,.55)]">
-                    <p className="text-xs font-bold uppercase tracking-widest text-white/70">
-                      Ready to work together?
-                    </p>
-                    <p className="mt-2 text-sm font-semibold leading-6 text-white/95">
-                      Choose a Basic, Standard or Premium package and place the order directly.
-                    </p>
+                  {selectedGig && <div className="mt-4 rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 p-5 text-white shadow-[0_18px_35px_-20px_rgba(79,70,229,.55)]">
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/70">Ready to work together?</p>
+                    <p className="mt-2 text-sm font-semibold leading-6 text-white/95">Choose a Basic, Standard or Premium package and place the order directly.</p>
                     <div className="mt-4">
-                      {packages[0] ? (
-                        <HireForm
-                          creatorId={creator.id}
-                          creatorName={fullName}
-                          gigId={firstGig.id}
-                          gigTitle={firstGig.title}
-                          packages={packages}
-                        />
-                      ) : null}
+                      <HireForm creatorId={creator.id} creatorName={fullName} gigId={selectedGig.id} gigTitle={selectedGig.title} packages={selectedGig.packages} />
                     </div>
-                  </div>
+                  </div>}
                 </div>
               </aside>
             </div>
