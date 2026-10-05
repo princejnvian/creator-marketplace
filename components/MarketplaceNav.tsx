@@ -41,7 +41,7 @@ export default function MarketplaceNav({ accountType = "client", active }: Props
         </form>
 
         <nav className="marketplace-actions" aria-label="Marketplace navigation">
-          <Link className={active === "creators" ? "active" : ""} href="/creators">Browse Creators</Link>
+          <Link className={active === "creators" ? "active" : ""} href="/creators?view=creators">Browse Creators</Link>
           <Link className="icon-action" href={requestHref} aria-label={requestLabel}><Icon>♧</Icon><span className="action-label">{requestLabel}</span></Link>
           <Link className={active === "messages" ? "icon-action active" : "icon-action"} href="/dashboard/messages" aria-label="Messages"><Icon>✉</Icon></Link>
           <Link className={active === "profile" ? "active profile-action" : "profile-action"} href="/profile">My Profile</Link>

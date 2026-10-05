@@ -22,6 +22,8 @@ export type CreatorGig = {
   id: string;
   title: string;
   category: string;
+  subcategory: string;
+  tags: string[];
   description: string;
   media: GigMedia[];
   packages: ServicePackage[];
@@ -60,6 +62,8 @@ export function normalizeGigs(value: unknown, legacyPackages?: unknown, legacyCa
       id: typeof item?.id === "string" && item.id ? item.id : crypto.randomUUID(),
       title: typeof item?.title === "string" && item.title.trim() ? item.title.trim().slice(0, 120) : `Gig ${index + 1}`,
       category: typeof item?.category === "string" && item.category.trim() ? item.category.trim().slice(0, 80) : (legacyCategory || "Creative Services"),
+      subcategory: typeof item?.subcategory === "string" ? item.subcategory.trim().slice(0, 80) : "",
+      tags: Array.isArray(item?.tags) ? item.tags.filter((tag: any) => typeof tag === "string").map((tag: string) => tag.trim().slice(0, 40)).filter(Boolean).slice(0, 10) : [],
       description: typeof item?.description === "string" ? item.description.trim().slice(0, 700) : "",
       media: Array.isArray(item?.media) ? item.media.slice(0, 6).map((media: any) => ({
         id: typeof media?.id === "string" && media.id ? media.id : crypto.randomUUID(),
@@ -78,6 +82,8 @@ export function normalizeGigs(value: unknown, legacyPackages?: unknown, legacyCa
         id: "gig-default",
         title: `${legacyCategory || "Creative"} Service`,
         category: legacyCategory || "Creative Services",
+        subcategory: "",
+        tags: [],
         description: "A service offered by this freelancer on YOUTENT.",
         media: [],
         packages,

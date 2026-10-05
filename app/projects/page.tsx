@@ -82,7 +82,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams?: Pr
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-violet-50 text-2xl shadow-inner">✦</div>
             <h2 className="mt-4 text-2xl font-black">No projects yet</h2>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">{accountType === "freelancer" ? "Accepted client requests will appear here." : "Find a creator and start your first project."}</p>
-            {accountType === "client" && <Link href="/creators" className="mt-5 inline-flex rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/20">Browse Creators →</Link>}
+            {accountType === "client" && <Link href="/creators?view=creators" className="mt-5 inline-flex rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/20">Browse Creators →</Link>}
           </div>
         )}
       </section>

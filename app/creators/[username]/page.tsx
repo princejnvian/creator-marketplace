@@ -315,7 +315,7 @@ export default async function CreatorProfilePage({ params }: Props) {
                   <p className="mt-2 text-sm text-slate-500">Choose the exact service you need. Each gig has its own Basic, Standard and Premium packages.</p>
                   <div className="mt-5 space-y-5">
                     {gigs.map((gig) => (
-                      <GigPackages key={gig.id} creatorId={creator.id} creatorName={fullName} gigId={gig.id} gigTitle={gig.title} packages={gig.packages} media={gig.media} startingPrice={Number(gig.packages[0]?.price) || startingPrice} />
+                      <GigPackages key={gig.id} creatorId={creator.id} creatorName={fullName} gigId={gig.id} gigTitle={gig.title} category={gig.category} subcategory={gig.subcategory} tags={gig.tags} packages={gig.packages} media={gig.media} startingPrice={Number(gig.packages[0]?.price) || startingPrice} />
                     ))}
                   </div>
                 </section>

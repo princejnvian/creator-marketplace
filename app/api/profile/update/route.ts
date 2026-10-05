@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeGigs } from "@/lib/gigs";
+import { MARKETPLACE_CATEGORY_NAMES, getSubcategories } from "@/lib/marketplace-categories";
 
 const allowedAccountTypes = ["client", "freelancer"] as const;
 
@@ -109,6 +110,8 @@ export async function POST(request: Request) {
       id: gig.id,
       title: gig.title.slice(0, 120),
       category: gig.category.slice(0, 80),
+      subcategory: getSubcategories(gig.category).includes(gig.subcategory) ? gig.subcategory.slice(0, 80) : (getSubcategories(gig.category)[0] || ""),
+      tags: gig.tags.slice(0, 10).map((tag) => tag.trim().slice(0, 40)).filter(Boolean),
       description: gig.description.slice(0, 700),
       media: gig.media.slice(0, 6).map((media) => ({
         id: media.id,

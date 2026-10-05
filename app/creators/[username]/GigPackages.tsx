@@ -9,6 +9,9 @@ export default function GigPackages({
   creatorName,
   gigId,
   gigTitle,
+  category,
+  subcategory,
+  tags = [],
   packages,
   startingPrice,
   media = [],
@@ -17,6 +20,9 @@ export default function GigPackages({
   creatorName: string;
   gigId: string;
   gigTitle?: string;
+  category?: string;
+  subcategory?: string;
+  tags?: string[];
   packages: ServicePackage[];
   media?: GigMedia[];
   startingPrice: number;
@@ -71,6 +77,19 @@ export default function GigPackages({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[.16em] text-slate-400">{gigTitle || "Gig"} • {active.name}</p>
+              {(category || subcategory) && <p className="mt-2 text-xs font-bold text-blue-600">{category}{subcategory ? ` · ${subcategory}` : ""}</p>}
+              {tags.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {tags.slice(0, 10).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
               <p className="mt-2 text-3xl font-black tracking-tight">₹{Number(active.price).toLocaleString("en-IN")}</p>
             </div>
             <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-black text-emerald-700">Secure checkout</span>

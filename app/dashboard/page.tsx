@@ -103,7 +103,7 @@ export default async function DashboardPage() {
 
           {!isFreelancer && (
             <Link
-              href="/creators"
+              href="/creators?view=creators"
               className="inline-flex shrink-0 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-600"
             >
               Find a Creator <span className="ml-2">→</span>
@@ -115,7 +115,7 @@ export default async function DashboardPage() {
           <section className="mt-6 rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div><p className="text-xs font-black uppercase tracking-[.16em] text-blue-600">Find a service</p><h2 className="mt-1 text-xl font-black">What do you need help with?</h2></div>
-              <Link href="/creators" className="text-sm font-bold text-blue-600">Browse all creators →</Link>
+              <Link href="/creators?view=creators" className="text-sm font-bold text-blue-600">Browse all creators →</Link>
             </div>
             <form action="/creators" className="mt-4 flex gap-2">
               <input name="q" placeholder="Search video editing, thumbnails, voice over, web development..." className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:bg-white" />

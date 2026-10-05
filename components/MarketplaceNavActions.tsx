@@ -151,7 +151,7 @@ export default function MarketplaceNavActions({ accountType }: Props) {
 
   return (
     <>
-      <Link href="/creators" className="hidden rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 lg:inline-flex">
+      <Link href="/creators?view=creators" className="hidden rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 lg:inline-flex">
         Browse Creators
       </Link>
 
@@ -243,7 +243,7 @@ export default function MarketplaceNavActions({ accountType }: Props) {
 
               <div className="mt-4 space-y-1.5">
                 <MobileLink href="/dashboard" label="Dashboard" icon="⌂" onClick={() => setMenuOpen(false)} />
-                <MobileLink href="/creators" label="Browse Creators" icon="✦" onClick={() => setMenuOpen(false)} />
+                <MobileLink href="/creators?view=creators" label="Browse Creators" icon="✦" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/projects" label="My Projects" icon="▣" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/projects?status=pending_payment" label="Pending Projects" icon="⏳" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/projects?status=active" label="Active Projects" icon="⚡" onClick={() => setMenuOpen(false)} />

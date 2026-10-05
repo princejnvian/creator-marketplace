@@ -3,7 +3,13 @@ import Link from "next/link";
 import YoutentLogo from "@/components/YoutentLogo";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeGigs, packagePriceRange } from "@/lib/gigs";
+import { createClient } from "@/lib/supabase/server";
 export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: currentProfile } = user ? await supabase.from("profiles").select("account_type").eq("id", user.id).maybeSingle() : { data: null };
+  const isCurrentFreelancer = currentProfile?.account_type === "freelancer";
+
   const { data: creators } = await supabaseAdmin
     .from("profiles")
     .select("id, full_name, username, bio, avatar_url, skills, starting_price, gigs, service_packages, primary_category, categories, last_seen_at")
@@ -38,12 +44,14 @@ export default async function Home() {
               How it works
             </Link>
 
-            <Link
-              href="/signup"
-              className="text-sm font-medium text-slate-600 transition-colors duration-200 hover:text-blue-600"
-            >
-              Become a Freelancer
-            </Link>
+            {!isCurrentFreelancer && (
+              <Link
+                href="/signup"
+                className="text-sm font-medium text-slate-600 transition-colors duration-200 hover:text-blue-600"
+              >
+                Become a Freelancer
+              </Link>
+            )}
 
             <Link
               href="/login"
@@ -395,6 +403,7 @@ export default async function Home() {
 
 
       {/* ================= CREATOR CTA ================= */}
+      {!isCurrentFreelancer && (
       <section className="relative isolate overflow-hidden bg-slate-950 px-5 py-20 sm:px-6 md:py-28 lg:px-8">
 
         {/* Glow */}
@@ -430,6 +439,7 @@ export default async function Home() {
 
         </div>
       </section>
+      )}
 
 
       {/* ================= FOOTER ================= */}

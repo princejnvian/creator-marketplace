@@ -7,19 +7,11 @@ import { createClient } from "@/lib/supabase/client";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 import { DEFAULT_GIG_PACKAGES, normalizeGigs } from "@/lib/gigs";
 import type { CreatorGig, ServicePackage, GigMedia } from "@/lib/gigs";
+import { MARKETPLACE_CATEGORIES, getSubcategories } from "@/lib/marketplace-categories";
 
-const categories = [
-  "Graphics & Design",
-  "Video & Animation",
-  "Writing & Translation",
-  "Music & Audio",
-  "Programming & Tech",
-  "Digital Marketing",
-  "AI Services",
-  "Photography",
-  "Business",
-  "Finance",
-];
+const categories = MARKETPLACE_CATEGORIES.map((item) => item.label);
+
+
 
 const availableSkills = [
   "Video Editing", "Thumbnail Design", "Voice Over", "Shorts Editing",
@@ -61,6 +53,7 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [tagDraft, setTagDraft] = useState("");
 
   useEffect(() => {
     async function loadProfile() {
@@ -158,11 +151,34 @@ export default function ProfilePage() {
     if (!target) return;
     setSelectedGigId(id);
     setPackages(target.packages);
+    setTagDraft("");
   }
 
-  function updateGig(field: keyof Omit<CreatorGig, "id" | "packages">, value: string) {
+  function updateGig(field: "title" | "category" | "subcategory" | "description", value: string) {
     if (!selectedGigId) return;
     setGigs((current) => current.map((gig) => gig.id === selectedGigId ? { ...gig, [field]: value } : gig));
+  }
+
+  function addGigTag(value?: string) {
+    if (!selectedGigId) return;
+    const nextTag = (value ?? tagDraft).trim().replace(/^,+|,+$/g, "").trim();
+    if (!nextTag) { setTagDraft(""); return; }
+    setGigs((current) => current.map((gig) => {
+      if (gig.id !== selectedGigId) return gig;
+      const existing = (gig.tags || []).map((tag) => tag.trim()).filter(Boolean);
+      if (existing.some((tag) => tag.toLowerCase() === nextTag.toLowerCase())) return gig;
+      if (existing.length >= 10) return gig;
+      return { ...gig, tags: [...existing, nextTag] };
+    }));
+    setTagDraft("");
+  }
+
+  function removeGigTag(tagToRemove: string) {
+    if (!selectedGigId) return;
+    setGigs((current) => current.map((gig) => gig.id === selectedGigId
+      ? { ...gig, tags: (gig.tags || []).filter((tag) => tag !== tagToRemove) }
+      : gig
+    ));
   }
 
   async function uploadPackageMedia(file: File, packageId: string) {
@@ -214,7 +230,7 @@ export default function ProfilePage() {
   function addGig() {
     const id = crypto.randomUUID();
     const category = primaryCategory || selectedCategories[0] || categories[0];
-    const gig: CreatorGig = { id, title: "New Gig", category, description: "Describe exactly what you deliver in this gig.", media: [], packages: DEFAULT_GIG_PACKAGES.map((item) => ({ ...item })) };
+    const gig: CreatorGig = { id, title: "New Gig", category, subcategory: getSubcategories(category)[0] || "", tags: [], description: "Describe exactly what you deliver in this gig.", media: [], packages: DEFAULT_GIG_PACKAGES.map((item) => ({ ...item })) };
     setGigs((current) => [...current, gig]);
     setSelectedGigId(id);
     setPackages(gig.packages);
@@ -319,7 +335,11 @@ export default function ProfilePage() {
                         <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-widest text-blue-600">Gig details</p><h3 className="mt-1 text-xl font-black">{activeGig.title}</h3></div><button type="button" onClick={deleteSelectedGig} className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-black text-red-600 hover:bg-red-50">Delete gig</button></div>
                         <div className="mt-5 grid gap-4 sm:grid-cols-2">
                           <div><label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Gig title</label><input value={activeGig.title} onChange={(e) => updateGig("title", e.target.value)} placeholder="Example: Professional Instagram Reel Editing" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-blue-400" /></div>
-                          <div><label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Gig category</label><select value={activeGig.category} onChange={(e) => updateGig("category", e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-blue-400">{categories.map((category) => <option key={category}>{category}</option>)}</select></div>
+                          <div><label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Gig category</label><select value={activeGig.category} onChange={(e) => { const category = e.target.value; updateGig("category", category); const nextSubcategory = getSubcategories(category)[0] || ""; setGigs((current) => current.map((gig) => gig.id === selectedGigId ? { ...gig, category, subcategory: nextSubcategory } : gig)); }} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-blue-400">{categories.map((category) => <option key={category}>{category}</option>)}</select></div>
+                        </div>
+                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                          <div><label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Subcategory</label><select value={activeGig.subcategory || ""} onChange={(e) => updateGig("subcategory", e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-blue-400"><option value="">Select subcategory</option>{getSubcategories(activeGig.category).map((item) => <option key={item}>{item}</option>)}</select></div>
+                          <div><label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Tags</label><div className="flex min-h-[48px] flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 focus-within:border-blue-400"><span className="contents">{(activeGig.tags || []).map((tag) => <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-black text-blue-700">{tag}<button type="button" onClick={() => removeGigTag(tag)} className="ml-0.5 text-blue-500 hover:text-red-600" aria-label={`Remove ${tag}`}>×</button></span>)}</span><input value={tagDraft} onChange={(e) => { if (e.target.value.includes(",")) { const parts = e.target.value.split(","); parts.slice(0, -1).forEach((part) => addGigTag(part)); setTagDraft(parts.at(-1) || ""); } else { setTagDraft(e.target.value); } }} onKeyDown={(e) => { if (e.key === "," || e.key === "Enter") { e.preventDefault(); addGigTag(); } if (e.key === "Backspace" && !tagDraft && activeGig.tags?.length) removeGigTag(activeGig.tags[activeGig.tags.length - 1]); }} disabled={(activeGig.tags || []).length >= 10} placeholder={(activeGig.tags || []).length >= 10 ? "Maximum 10 tags" : "Type a tag and press comma or Enter"} className="min-w-[180px] flex-1 border-0 bg-transparent px-1 py-1 text-sm font-bold outline-none" /></div><p className="mt-1 text-[11px] text-slate-400">Press comma or Enter after each tag · up to 10 tags</p></div>
                         </div>
                         <label className="mt-4 block text-xs font-bold uppercase tracking-wider text-slate-500">Gig description</label><textarea value={activeGig.description} onChange={(e) => updateGig("description", e.target.value)} rows={3} placeholder="Tell clients exactly what this gig is for." className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-400" />
 
