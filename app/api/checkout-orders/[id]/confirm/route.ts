@@ -29,17 +29,13 @@ export async function POST(
 
     if (checkoutError || !checkout) return NextResponse.json({ error: "Checkout order not found." }, { status: 404 });
     if (checkout.status === "paid" && checkout.project_id) return NextResponse.json({ success: true, projectId: checkout.project_id });
-    if (checkout.status !== "created") return NextResponse.json({ error: "This checkout is already being processed. Please refresh in a moment." }, { status: 409 });
+    // A previous callback may have left this row in `processing` after the
+    // payment was captured. Do not block recovery based on that stale status;
+    // the database finalizer locks the checkout and is idempotent.
+    if (!["created", "processing"].includes(String(checkout.status))) {
+      return NextResponse.json({ error: "This checkout cannot be finalized from its current status." }, { status: 409 });
+    }
     if (checkout.razorpay_order_id !== orderId) return NextResponse.json({ error: "Razorpay order does not match this checkout." }, { status: 400 });
-
-    const { data: claim } = await supabaseAdmin
-      .from("checkout_orders")
-      .update({ status: "processing" })
-      .eq("id", checkout.id)
-      .eq("status", "created")
-      .select("id")
-      .maybeSingle();
-    if (!claim) return NextResponse.json({ error: "This checkout is already being processed. Please refresh in a moment." }, { status: 409 });
 
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -58,67 +54,32 @@ export async function POST(
     if (order.id !== orderId || order.currency !== "INR" || Number(order.amount) !== expectedPaise) return NextResponse.json({ error: "Razorpay order details do not match this checkout." }, { status: 400 });
     if (payment.order_id !== orderId || payment.currency !== "INR" || Number(payment.amount) !== expectedPaise || payment.status !== "captured") return NextResponse.json({ error: "Payment has not been captured correctly." }, { status: 400 });
 
-    const deadline = new Date();
-    deadline.setDate(deadline.getDate() + Number(checkout.delivery_days));
+    const { data: projectId, error: finalizeError } = await supabaseAdmin.rpc("finalize_checkout_payment", {
+      p_checkout_id: checkout.id,
+      p_expected_total: Number(checkout.package_price) + Number(checkout.platform_fee),
+      p_razorpay_order_id: orderId,
+      p_razorpay_payment_id: paymentId,
+    });
 
-    const { data: project, error: projectError } = await supabaseAdmin
-      .from("projects")
-      .insert({
-        request_id: null,
-        client_id: checkout.client_id,
-        freelancer_id: checkout.freelancer_id,
-        title: checkout.gig_title ? `${checkout.gig_title} — ${checkout.package_name}` : checkout.package_name,
-        description: checkout.package_description,
-        budget: checkout.package_price,
-        deadline: deadline.toISOString().slice(0, 10),
-        status: "active",
-      })
-      .select("id")
-      .single();
-
-    if (projectError || !project) {
-      console.error("Project creation after payment failed:", projectError);
-      return NextResponse.json({ error: "Payment was captured but the order could not be created. Please contact support with your Razorpay payment ID." }, { status: 500 });
+    if (finalizeError || !projectId) {
+      console.error("Atomic checkout finalization failed:", {
+        checkoutId: checkout.id,
+        razorpayOrderId: orderId,
+        razorpayPaymentId: paymentId,
+        error: finalizeError?.message,
+        code: (finalizeError as any)?.code,
+        details: (finalizeError as any)?.details,
+        hint: (finalizeError as any)?.hint,
+      });
+      return NextResponse.json({
+        error: "Payment was captured, but project setup could not be finalized yet. Do not pay again. Contact support with the checkout ID.",
+        paymentCaptured: true,
+        retryable: true,
+        checkoutId: checkout.id,
+      }, { status: 202 });
     }
 
-    const { data: savedPayment, error: paymentError } = await supabaseAdmin
-      .from("payments")
-      .insert({
-        project_id: project.id,
-        client_id: checkout.client_id,
-        freelancer_id: checkout.freelancer_id,
-        amount: Number(checkout.package_price) + Number(checkout.platform_fee),
-        project_amount: checkout.package_price,
-        platform_fee: checkout.platform_fee,
-        escrow_status: "pending",
-        currency: "INR",
-        status: "paid",
-        payment_gateway: "razorpay",
-        gateway_payment_id: paymentId,
-        gateway_order_id: orderId,
-        paid_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-
-    if (paymentError || !savedPayment) {
-      await supabaseAdmin.from("projects").delete().eq("id", project.id);
-      console.error("Payment ledger creation failed:", paymentError);
-      return NextResponse.json({ error: "Payment was captured but the order ledger could not be created." }, { status: 500 });
-    }
-
-    const { error: holdError } = await supabaseAdmin.rpc("hold_project_payment", { p_payment_id: savedPayment.id });
-    if (holdError) {
-      console.error("Escrow ledger hold failed:", holdError);
-      return NextResponse.json({ error: "Payment was captured, but the escrow ledger could not be initialized. Contact support." }, { status: 500 });
-    }
-
-    await supabaseAdmin
-      .from("checkout_orders")
-      .update({ status: "paid", paid_at: new Date().toISOString(), project_id: project.id })
-      .eq("id", checkout.id);
-
-    return NextResponse.json({ success: true, projectId: project.id });
+    return NextResponse.json({ success: true, projectId: String(projectId) });
   } catch (error) {
     console.error("Checkout confirmation error:", error);
     return NextResponse.json({ error: "Something went wrong while confirming payment." }, { status: 500 });

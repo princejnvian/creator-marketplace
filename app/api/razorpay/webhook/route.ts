@@ -117,95 +117,25 @@ export async function POST(request: Request) {
           .maybeSingle();
 
         if (checkout) {
-          if (checkout.status === "paid" && checkout.project_id) {
-            return NextResponse.json({ success: true, received: true });
-          }
-          if (checkout.status !== "created") {
-            return NextResponse.json({ success: true, received: true });
+          const expectedPaise = Math.round((Number(checkout.package_price) + Number(checkout.platform_fee)) * 100);
+          if (Number(paymentEntity.amount) !== expectedPaise || paymentEntity.currency !== "INR" || paymentEntity.status !== "captured") {
+            return NextResponse.json({ error: "Checkout payment amount/status mismatch" }, { status: 400 });
           }
 
-          const { data: claim } = await supabase
-            .from("checkout_orders")
-            .update({ status: "processing" })
-            .eq("id", checkout.id)
-            .eq("status", "created")
-            .select("id")
-            .maybeSingle();
-          if (!claim) return NextResponse.json({ success: true, received: true });
+          // The same DB transaction is used by the browser callback and webhook.
+          // It locks the checkout row and returns the existing project on retries.
+          const { data: projectId, error: finalizeError } = await supabase.rpc("finalize_checkout_payment", {
+            p_checkout_id: checkout.id,
+            p_expected_total: Number(checkout.package_price) + Number(checkout.platform_fee),
+            p_razorpay_order_id: razorpayOrderId,
+            p_razorpay_payment_id: razorpayPaymentId,
+          });
 
-          const projectAmount = Number(checkout.package_price);
-          const platformFee = Number(checkout.platform_fee);
-          const totalAmount = projectAmount + platformFee;
-          if (!Number.isFinite(projectAmount) || projectAmount <= 0) {
-            return NextResponse.json({ error: "Invalid checkout amount" }, { status: 400 });
+          if (finalizeError || !projectId) {
+            console.error("Webhook atomic checkout finalization failed:", finalizeError);
+            return NextResponse.json({ error: "Checkout finalization failed; retry webhook" }, { status: 500 });
           }
-
-          const expectedPaise = Math.round(totalAmount * 100);
-          if (Number(paymentEntity.amount) !== expectedPaise || paymentEntity.currency !== "INR") {
-            return NextResponse.json({ error: "Checkout payment amount mismatch" }, { status: 400 });
-          }
-
-          const deadline = new Date();
-          deadline.setDate(deadline.getDate() + Number(checkout.delivery_days));
-
-          const { data: project, error: projectError } = await supabase
-            .from("projects")
-            .insert({
-              request_id: null,
-              client_id: checkout.client_id,
-              freelancer_id: checkout.freelancer_id,
-              title: checkout.gig_title ? `${checkout.gig_title} — ${checkout.package_name}` : checkout.package_name,
-              description: checkout.package_description,
-              budget: projectAmount,
-              deadline: deadline.toISOString().slice(0, 10),
-              status: "active",
-            })
-            .select("id")
-            .single();
-
-          if (projectError || !project) {
-            console.error("Webhook checkout project creation error:", projectError);
-            return NextResponse.json({ error: "Unable to create paid project" }, { status: 500 });
-          }
-
-          const { data: savedPayment, error: paymentInsertError } = await supabase
-            .from("payments")
-            .insert({
-              project_id: project.id,
-              client_id: checkout.client_id,
-              freelancer_id: checkout.freelancer_id,
-              amount: totalAmount,
-              project_amount: projectAmount,
-              platform_fee: platformFee,
-              escrow_status: "pending",
-              currency: "INR",
-              status: "paid",
-              payment_gateway: "razorpay",
-              gateway_payment_id: razorpayPaymentId,
-              gateway_order_id: razorpayOrderId,
-              paid_at: new Date().toISOString(),
-            })
-            .select("id")
-            .single();
-
-          if (paymentInsertError || !savedPayment) {
-            await supabase.from("projects").delete().eq("id", project.id);
-            console.error("Webhook checkout payment insert error:", paymentInsertError);
-            return NextResponse.json({ error: "Unable to create payment ledger" }, { status: 500 });
-          }
-
-          const { error: holdError } = await supabase.rpc("hold_project_payment", { p_payment_id: savedPayment.id });
-          if (holdError) {
-            console.error("Webhook checkout escrow hold error:", holdError);
-            return NextResponse.json({ error: "Unable to initialize escrow hold" }, { status: 500 });
-          }
-
-          await supabase
-            .from("checkout_orders")
-            .update({ status: "paid", paid_at: new Date().toISOString(), project_id: project.id })
-            .eq("id", checkout.id);
-
-          return NextResponse.json({ success: true, received: true, projectId: project.id });
+          return NextResponse.json({ success: true, received: true, projectId: String(projectId) });
         }
 
         console.log("No YOUTENT payment or checkout found for Razorpay order:", razorpayOrderId);

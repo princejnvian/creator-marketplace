@@ -19,7 +19,6 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
     .maybeSingle();
 
   if (!checkout || checkout.client_id !== user.id) notFound();
-  if (checkout.status === "paid" && checkout.project_id) redirect(`/projects/${checkout.project_id}`);
 
   const price = Number(checkout.package_price);
   const fee = Number(checkout.platform_fee);
@@ -63,7 +62,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
             </div>
 
             <div className="mt-6">
-              <CheckoutPaymentButton checkoutId={checkout.id} orderId={checkout.razorpay_order_id} amount={Math.round(total * 100)} packageName={checkout.package_name} />
+              <CheckoutPaymentButton checkoutId={checkout.id} orderId={checkout.razorpay_order_id} amount={Math.round(total * 100)} packageName={checkout.package_name} initialStatus={checkout.status} initialProjectId={checkout.project_id} />
             </div>
           </div>
         </div>
