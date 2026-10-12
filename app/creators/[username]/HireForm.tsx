@@ -1,6 +1,18 @@
 "use client";
 
-export default function HireForm() {
+import type { ServicePackage } from "@/lib/gigs";
+
+type HireFormProps = {
+  creatorId?: string;
+  creatorName?: string;
+  gigId?: string;
+  gigTitle?: string;
+  packages?: ServicePackage[];
+};
+
+// Props are accepted to preserve existing creator-profile call sites.
+// Ordering is intentionally disabled while the payment system is rebuilt.
+export default function HireForm(_props: HireFormProps) {
   return (
     <div className="w-full">
       <button
