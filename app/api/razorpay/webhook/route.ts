@@ -77,8 +77,64 @@ export async function POST(request: Request) {
         );
       }
 
+      // IMPORTANT: direct YOUTENT gig checkouts must be finalized before the
+      // legacy `payments` flow. Otherwise a matching legacy payment row can
+      // route a successful checkout into hold_project_payment(), which is not
+      // the atomic checkout/project/ledger finalizer and can leave a captured
+      // payment without its project.
+      const { data: directCheckout, error: directCheckoutError } = await supabase
+        .from("checkout_orders")
+        .select("id, status, project_id, package_price, platform_fee, razorpay_order_id")
+        .eq("razorpay_order_id", razorpayOrderId)
+        .maybeSingle();
+
+      if (directCheckoutError) {
+        console.error("Webhook direct checkout lookup error:", directCheckoutError);
+        return NextResponse.json({ error: "Unable to look up checkout" }, { status: 500 });
+      }
+
+      if (directCheckout) {
+        if (directCheckout.status === "paid" && directCheckout.project_id) {
+          return NextResponse.json({ success: true, received: true, projectId: String(directCheckout.project_id) });
+        }
+
+        const expectedPaise = Math.round((Number(directCheckout.package_price) + Number(directCheckout.platform_fee)) * 100);
+        if (
+          directCheckout.razorpay_order_id !== razorpayOrderId ||
+          Number(paymentEntity.amount) !== expectedPaise ||
+          paymentEntity.currency !== "INR" ||
+          paymentEntity.status !== "captured"
+        ) {
+          console.error("Webhook direct checkout amount/status mismatch", { checkoutId: directCheckout.id, razorpayOrderId });
+          return NextResponse.json({ error: "Checkout payment amount/status mismatch" }, { status: 400 });
+        }
+
+        const { data: projectId, error: finalizeError } = await supabase.rpc("finalize_checkout_payment", {
+          p_checkout_id: directCheckout.id,
+          p_expected_total: Number(directCheckout.package_price) + Number(directCheckout.platform_fee),
+          p_razorpay_order_id: razorpayOrderId,
+          p_razorpay_payment_id: razorpayPaymentId,
+        });
+
+        if (finalizeError || !projectId) {
+          console.error("Webhook direct checkout finalization failed:", {
+            checkoutId: directCheckout.id,
+            razorpayOrderId,
+            razorpayPaymentId,
+            code: (finalizeError as any)?.code,
+            message: finalizeError?.message,
+            details: (finalizeError as any)?.details,
+            hint: (finalizeError as any)?.hint,
+          });
+          return NextResponse.json({ error: "Checkout finalization failed; retry webhook" }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, received: true, projectId: String(projectId) });
+      }
+
       /*
-       * Find the Crevo payment using the Razorpay order ID.
+       * Find the legacy payment using the Razorpay order ID only when this
+       * order does not belong to the direct gig checkout flow.
        */
       const { data: payment, error: paymentLookupError } =
         await supabase
