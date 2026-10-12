@@ -72,18 +72,12 @@ export default async function MessagesPage({ params }: Props) {
     );
   }
 
-  // Get messages using project_request_id
+  // Project chat is keyed directly by project_id. This supports both legacy
+  // request-based projects and direct gig-checkout projects where request_id is NULL.
   const { data: messages, error: messagesError } = await supabase
-    .from("messages")
-    .select(`
-      id,
-      sender_id,
-      receiver_id,
-      project_request_id,
-      content,
-      created_at
-    `)
-    .eq("project_request_id", project.request_id)
+    .from("project_messages")
+    .select("id, sender_id, receiver_id, project_id, content, created_at")
+    .eq("project_id", project.id)
     .order("created_at", { ascending: true });
 
   // Send message
@@ -136,11 +130,11 @@ export default async function MessagesPage({ params }: Props) {
         : currentProject.client_id;
 
     const { error } = await supabase
-      .from("messages")
+      .from("project_messages")
       .insert({
+        project_id: currentProject.id,
         sender_id: user.id,
         receiver_id: receiverId,
-        project_request_id: currentProject.request_id,
         content: message,
       });
 

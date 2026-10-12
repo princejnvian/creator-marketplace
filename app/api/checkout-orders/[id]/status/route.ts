@@ -14,7 +14,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     const { id } = await params;
     const { data: checkout, error } = await supabaseAdmin
       .from("checkout_orders")
-      .select("id, client_id, status, project_id, razorpay_order_id, package_price, platform_fee")
+      .select("id, client_id, status, project_id, package_price, platform_fee, razorpay_order_id")
       .eq("id", id)
       .maybeSingle();
 
@@ -22,83 +22,51 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       return NextResponse.json({ error: "Checkout not found." }, { status: 404 });
     }
 
-    if (checkout.status === "paid" && checkout.project_id) {
-      return NextResponse.json({ status: "paid", projectId: checkout.project_id });
-    }
-
-    // Recovery path: if Razorpay captured the payment but the browser callback
-    // failed, discover the captured payment from the order and safely finalize it.
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (
-      checkout.razorpay_order_id &&
-      ["created", "processing"].includes(String(checkout.status)) &&
-      keyId &&
-      keySecret
-    ) {
-      const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
-      const [order, paymentsResponse] = await Promise.all([
-        razorpay.orders.fetch(checkout.razorpay_order_id),
-        razorpay.orders.fetchPayments(checkout.razorpay_order_id),
-      ]);
-
-      const expectedPaise = Math.round(
-        (Number(checkout.package_price) + Number(checkout.platform_fee)) * 100
-      );
-      const payments = (paymentsResponse as any)?.items ?? [];
-      const captured = payments.find((payment: any) =>
-        payment?.status === "captured" &&
-        payment?.order_id === checkout.razorpay_order_id &&
-        payment?.currency === "INR" &&
-        Number(payment?.amount) === expectedPaise
-      );
-
-      if (
-        order.id === checkout.razorpay_order_id &&
-        order.currency === "INR" &&
-        Number(order.amount) === expectedPaise &&
-        captured?.id
-      ) {
-        const total = Number(checkout.package_price) + Number(checkout.platform_fee);
-        const { data: projectId, error: finalizeError } = await supabaseAdmin.rpc(
-          "finalize_checkout_payment",
-          {
-            p_checkout_id: checkout.id,
-            p_razorpay_order_id: checkout.razorpay_order_id,
-            p_razorpay_payment_id: String(captured.id),
-            p_expected_total: total,
+    // Idempotent recovery: when browser callback/webhook was interrupted, ask Razorpay
+    // for the authoritative order/payment state and run the same atomic DB finalizer.
+    if ((!checkout.project_id || checkout.status !== "paid") && checkout.razorpay_order_id) {
+      const keyId = process.env.RAZORPAY_KEY_ID;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      if (keyId && keySecret) {
+        const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+        const expectedPaise = Math.round((Number(checkout.package_price) + Number(checkout.platform_fee)) * 100);
+        const order = await razorpay.orders.fetch(String(checkout.razorpay_order_id));
+        if (order.id === checkout.razorpay_order_id && order.currency === "INR" && Number(order.amount) === expectedPaise) {
+          const paymentsResult = await razorpay.orders.fetchPayments(String(checkout.razorpay_order_id));
+          const payments = Array.isArray((paymentsResult as any)?.items) ? (paymentsResult as any).items : [];
+          const captured = payments.find((payment: any) => payment.order_id === checkout.razorpay_order_id && payment.status === "captured" && payment.currency === "INR" && Number(payment.amount) === expectedPaise);
+          if (captured) {
+            const { data: projectId, error: finalizeError } = await supabaseAdmin.rpc("finalize_checkout_payment", {
+              p_checkout_id: checkout.id,
+              p_expected_total: Number(checkout.package_price) + Number(checkout.platform_fee),
+              p_razorpay_order_id: String(checkout.razorpay_order_id),
+              p_razorpay_payment_id: String(captured.id),
+            });
+            if (finalizeError || !projectId) {
+              console.error("Checkout status recovery finalization failed", {
+                checkoutId: checkout.id,
+                orderId: checkout.razorpay_order_id,
+                paymentId: captured.id,
+                code: (finalizeError as any)?.code,
+                message: finalizeError?.message,
+                details: (finalizeError as any)?.details,
+                hint: (finalizeError as any)?.hint,
+              });
+            }
           }
-        );
-
-        if (finalizeError || !projectId) {
-          console.error("Checkout status recovery finalization failed:", {
-            checkoutId: checkout.id,
-            razorpayOrderId: checkout.razorpay_order_id,
-            razorpayPaymentId: captured.id,
-            code: (finalizeError as any)?.code,
-            message: finalizeError?.message,
-            details: (finalizeError as any)?.details,
-            hint: (finalizeError as any)?.hint,
-          });
-        } else {
-          return NextResponse.json({ status: "paid", projectId: String(projectId), recovered: true });
         }
       }
     }
 
-    // Re-read in case a webhook or callback finalized while this request ran.
-    const { data: latest } = await supabaseAdmin
+    const { data: latest, error: latestError } = await supabaseAdmin
       .from("checkout_orders")
       .select("status, project_id")
       .eq("id", id)
       .maybeSingle();
-
-    return NextResponse.json({
-      status: latest?.status || checkout.status,
-      projectId: latest?.project_id || checkout.project_id || null,
-    });
+    if (latestError || !latest) return NextResponse.json({ error: "Unable to refresh checkout status." }, { status: 500 });
+    return NextResponse.json({ status: latest.status, projectId: latest.project_id || null });
   } catch (error) {
     console.error("Checkout status/recovery error:", error);
-    return NextResponse.json({ error: "Unable to verify checkout status right now." }, { status: 500 });
+    return NextResponse.json({ error: "Unable to verify payment status right now." }, { status: 503 });
   }
 }
