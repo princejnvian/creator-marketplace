@@ -1228,15 +1228,12 @@ export default async function DeliveryPage({ params }: Props) {
                             .rpc("release_project_payment", { p_project_id: project.id });
 
                           if (releaseError) {
-                            // Delivery approval and payout release are separate outcomes.
-                            // Do not leave an approved delivery marked active just because payout
-                            // reconciliation needs attention. Keep the funds state governed by the
-                            // release RPC and log the failure for follow-up.
-                            console.error("Escrow release error after delivery approval:", releaseError);
+                            console.error("Escrow release error:", releaseError);
+                            return;
                           }
 
-                          // Mark the project completed after the client approves delivery.
-                          // This status update does NOT itself release or make funds withdrawable.
+                          // Keep the project status in sync after the release function succeeds.
+                          // This does not release funds itself; release_project_payment remains the gate.
                           const { error: completedStatusError } = await supabaseAdmin
                             .from("projects")
                             .update({ status: "completed" })

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 import DashboardProjectsPanel from "@/components/DashboardProjectsPanel";
 import SiteFooter from "@/components/SiteFooter";
@@ -53,50 +52,13 @@ export default async function DashboardPage() {
 
   const isFreelancer = accountType === "freelancer";
 
-  const { data: fetchedProjects } = await supabase
+  const { data: projects } = await supabase
     .from("projects")
     .select(
       "id, title, description, budget, deadline, status, created_at, client_id, freelancer_id"
     )
     .or(`client_id.eq.${user.id},freelancer_id.eq.${user.id}`)
     .order("created_at", { ascending: false });
-
-  // Reconcile legacy records: some deliveries were approved while their project
-  // row stayed active. Only inspect projects already scoped to the signed-in user.
-  let projects = fetchedProjects || [];
-  const ownedProjectIds = projects.map((project) => project.id);
-  if (ownedProjectIds.length > 0) {
-    const { data: approvedDeliveries, error: approvedDeliveryError } = await supabase
-      .from("project_deliveries")
-      .select("project_id")
-      .in("project_id", ownedProjectIds)
-      .eq("status", "approved");
-
-    if (approvedDeliveryError) {
-      console.error("Dashboard approved-delivery reconciliation lookup failed:", approvedDeliveryError);
-    } else {
-      const approvedIds = [...new Set((approvedDeliveries || []).map((delivery) => delivery.project_id))];
-      const idsToComplete = approvedIds.filter((projectId) =>
-        projects.some((project) => project.id === projectId && project.status !== "completed")
-      );
-
-      if (idsToComplete.length > 0) {
-        const { error: statusSyncError } = await supabaseAdmin
-          .from("projects")
-          .update({ status: "completed" })
-          .in("id", idsToComplete)
-          .or(`client_id.eq.${user.id},freelancer_id.eq.${user.id}`);
-
-        if (statusSyncError) {
-          console.error("Dashboard project status reconciliation failed:", statusSyncError);
-        } else {
-          projects = projects.map((project) =>
-            idsToComplete.includes(project.id) ? { ...project, status: "completed" } : project
-          );
-        }
-      }
-    }
-  }
 
   const { data: creators } = isFreelancer
     ? { data: [] as Creator[] }
