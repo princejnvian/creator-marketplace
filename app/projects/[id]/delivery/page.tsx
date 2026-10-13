@@ -146,6 +146,36 @@ export default async function DeliveryPage({ params }: Props) {
     .limit(1)
     .maybeSingle();
 
+  // Repair legacy approvals that were saved on the delivery row while the
+  // project status update was skipped by an earlier payout-RPC failure.
+  // This only synchronizes work status; it does NOT claim that funds were released.
+  const legacyApprovedNeedsSync =
+    latestDelivery?.status === "approved" && project.status !== "completed";
+
+  if (legacyApprovedNeedsSync && isClient) {
+    const { error: syncProjectError } = await supabaseAdmin
+      .from("projects")
+      .update({ status: "completed" })
+      .eq("id", project.id)
+      .eq("client_id", user.id);
+
+    if (!syncProjectError) {
+      project.status = "completed";
+      if (project.request_id) {
+        const { error: syncRequestError } = await supabaseAdmin
+          .from("project_requests")
+          .update({ status: "completed", updated_at: new Date().toISOString() })
+          .eq("id", project.request_id);
+        if (syncRequestError) console.error("Legacy request completion sync failed:", syncRequestError);
+      }
+      revalidatePath("/dashboard");
+      revalidatePath("/projects");
+      revalidatePath(`/projects/${project.id}`);
+    } else {
+      console.error("Legacy project completion sync failed:", syncProjectError);
+    }
+  }
+
   // =========================
   // GET PROJECT FILES
   // =========================
@@ -950,10 +980,19 @@ export default async function DeliveryPage({ params }: Props) {
                   )}
 
                   {isApproved && (
-                    <p className="text-sm leading-6 text-slate-600">
-                      You approved the delivery. This project has been
-                      completed successfully.
-                    </p>
+                    <div className="space-y-3">
+                      <p className="text-sm leading-6 text-slate-600">
+                        You approved the delivery. This project has been completed.
+                      </p>
+                      {isClient && (
+                        <Link
+                          href={`/projects/${project.id}/review`}
+                          className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-600"
+                        >
+                          Rate & Review Freelancer →
+                        </Link>
+                      )}
+                    </div>
                   )}
 
                 </div>
@@ -1222,18 +1261,18 @@ export default async function DeliveryPage({ params }: Props) {
                             return;
                           }
 
-                          // Release escrow atomically. The database function verifies that
-                          // the authenticated caller is the project client and completes the project.
+                          // Try the configured escrow-release function. A release failure must
+                          // not leave an already-approved delivery stuck as an active project.
+                          // The warning on the review page makes it clear that payout still needs attention.
                           const { error: releaseError } = await supabase
                             .rpc("release_project_payment", { p_project_id: project.id });
 
                           if (releaseError) {
-                            console.error("Escrow release error:", releaseError);
-                            return;
+                            console.error("Escrow release error after client approval:", releaseError);
                           }
 
-                          // Keep the project status in sync after the release function succeeds.
-                          // This does not release funds itself; release_project_payment remains the gate.
+                          // Delivery approval completes the work lifecycle independently from
+                          // the payout ledger. Never claim that funds were released if RPC failed.
                           const { error: completedStatusError } = await supabaseAdmin
                             .from("projects")
                             .update({ status: "completed" })
@@ -1242,13 +1281,14 @@ export default async function DeliveryPage({ params }: Props) {
 
                           if (completedStatusError) {
                             console.error("Project completion status update error:", completedStatusError);
-                            return;
+                            redirect(`/projects/${project.id}/delivery?approval=partial`);
                           }
 
                           revalidatePath("/dashboard");
                           revalidatePath("/projects");
                           revalidatePath(`/projects/${project.id}`);
                           revalidatePath(`/projects/${project.id}/delivery`);
+                          revalidatePath(`/projects/${project.id}/review`);
 
                           // Keep the original request in sync with the completed project.
                           if (project.request_id) {
@@ -1266,7 +1306,9 @@ export default async function DeliveryPage({ params }: Props) {
                           }
 
                           redirect(
-                            `/projects/${project.id}/review`
+                            releaseError
+                              ? `/projects/${project.id}/review?payout=held`
+                              : `/projects/${project.id}/review`
                           );
                         }}
                       >
