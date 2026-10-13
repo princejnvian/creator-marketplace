@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import FileUpload from "../files/FileUpload";
@@ -1229,28 +1229,26 @@ export default async function DeliveryPage({ params }: Props) {
 
                           if (releaseError) {
                             console.error("Escrow release error:", releaseError);
-                            redirect(`/projects/${project.id}/delivery?error=release_failed`);
+                            return;
                           }
 
-                          // Ensure the project status is synchronized after successful release.
-                          // The release RPC remains responsible for the escrow ledger/wallet operations.
-                          const { error: projectStatusError } = await supabaseAdmin
+                          // Keep the project status in sync after the release function succeeds.
+                          // This does not release funds itself; release_project_payment remains the gate.
+                          const { error: completedStatusError } = await supabaseAdmin
                             .from("projects")
                             .update({ status: "completed" })
                             .eq("id", project.id)
                             .eq("client_id", user.id);
 
-                          if (projectStatusError) {
-                            console.error("Project completion status update error:", projectStatusError);
-                            redirect(`/projects/${project.id}/delivery?error=project_status_sync_failed`);
+                          if (completedStatusError) {
+                            console.error("Project completion status update error:", completedStatusError);
+                            return;
                           }
 
-                          // Refresh server-rendered project and dashboard views immediately.
-                          revalidatePath(`/projects/${project.id}`);
-                          revalidatePath(`/projects/${project.id}/delivery`);
-                          revalidatePath(`/projects/${project.id}/review`);
                           revalidatePath("/dashboard");
                           revalidatePath("/projects");
+                          revalidatePath(`/projects/${project.id}`);
+                          revalidatePath(`/projects/${project.id}/delivery`);
 
                           // Keep the original request in sync with the completed project.
                           if (project.request_id) {

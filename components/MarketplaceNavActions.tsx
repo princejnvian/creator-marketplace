@@ -253,7 +253,10 @@ export default function MarketplaceNavActions({ accountType }: Props) {
                 <MobileLink href="/profile" label="My Profile" icon="◉" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/wallet" label="Wallet" icon="₹" onClick={() => setMenuOpen(false)} />
                 <MobileLink href="/faq" label="FAQ & Help" icon="?" onClick={() => setMenuOpen(false)} />
-                <MobileLink href="/contact" label="Contact Support" icon="✆" onClick={() => setMenuOpen(false)} />\n                <form action="/auth/signout" method="post" className="pt-1">\n                  <button type="submit" className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-bold text-red-600 transition hover:bg-red-50"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-sm">↪</span><span className="flex-1">Log out</span><span className="text-red-200">→</span></button>\n                </form>
+                <MobileLink href="/contact" label="Contact Support" icon="✆" onClick={() => setMenuOpen(false)} />
+                <form action="/auth/signout" method="post" className="pt-1">
+                  <button type="submit" className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-bold text-red-600 transition hover:bg-red-50"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-sm">↪</span><span className="flex-1">Log out</span><span className="text-red-200">→</span></button>
+                </form>
               </div>
             </div>
 
