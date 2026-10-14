@@ -93,8 +93,10 @@ export default async function DeliveryPage({ params }: Props) {
   // Delivery is available only after the client has completed payment.
   const { data: payment } = await supabase
     .from("payments")
-    .select("status")
+    .select("status, escrow_status")
     .eq("project_id", project.id)
+    .order("paid_at", { ascending: false, nullsFirst: false })
+    .limit(1)
     .maybeSingle();
 
   const paymentPaid = payment?.status === "paid";
@@ -150,17 +152,23 @@ export default async function DeliveryPage({ params }: Props) {
   // wallet release failed on an earlier attempt. The database RPC is
   // idempotent and independently verifies the client, approved delivery,
   // paid payment, and held amount before moving funds.
+  let walletReleaseRecoveryError: string | null = null;
   if (isClient && latestDelivery?.status === "approved" && paymentPaid) {
     const { error: recoveryReleaseError } = await supabase.rpc(
       "release_project_payment",
       { p_project_id: project.id }
     );
     if (recoveryReleaseError) {
+      walletReleaseRecoveryError = recoveryReleaseError.message;
       console.error("Approved-delivery wallet release recovery failed:", {
         projectId: project.id,
         code: recoveryReleaseError.code,
         message: recoveryReleaseError.message,
       });
+    } else if (project.status !== "completed") {
+      // Re-read the persisted status on the next request so dashboard counters
+      // and the delivery status card reflect the committed database result.
+      redirect(`/projects/${project.id}/delivery?recovered=1`);
     }
   }
 
@@ -897,6 +905,12 @@ export default async function DeliveryPage({ params }: Props) {
 
         {isClient && (
           <div className="space-y-6">
+            {walletReleaseRecoveryError && (
+              <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                Delivery is approved, but wallet release is still pending. Do not pay again. Retry after the wallet-release migration is deployed.
+                <span className="mt-1 block text-xs text-amber-800">Details: {walletReleaseRecoveryError}</span>
+              </div>
+            )}
 
             {/* =========================
                 STATUS
@@ -972,6 +986,11 @@ export default async function DeliveryPage({ params }: Props) {
                       You approved the delivery. This project has been
                       completed successfully.
                     </p>
+                  )}
+                  {isApproved && (
+                    <Link href={`/projects/${project.id}/review`} className="mt-4 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white hover:bg-blue-700">
+                      Rate & Review Freelancer →
+                    </Link>
                   )}
 
                 </div>
@@ -1247,7 +1266,9 @@ export default async function DeliveryPage({ params }: Props) {
 
                           if (releaseError) {
                             console.error("Escrow release error:", releaseError);
-                            return;
+                            revalidatePath(`/projects/${project.id}/delivery`);
+                            revalidatePath("/dashboard");
+                            redirect(`/projects/${project.id}/delivery?releaseRetry=1`);
                           }
 
                           // Keep the project status in sync after the release function succeeds.

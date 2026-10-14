@@ -144,8 +144,32 @@ export default async function CreatorProfilePage({ params, searchParams }: Props
 
   const { data: reviewRows } = await supabaseAdmin
     .from("reviews")
-    .select("rating")
+    .select("project_id, rating")
     .eq("freelancer_id", creator.id);
+
+  const { data: checkoutGigRows } = await supabaseAdmin
+    .from("checkout_orders")
+    .select("project_id, gig_id")
+    .eq("freelancer_id", creator.id)
+    .not("project_id", "is", null)
+    .not("gig_id", "is", null);
+
+  const projectGigMap = new Map<string, string>();
+  for (const checkout of checkoutGigRows || []) {
+    if (checkout.project_id && checkout.gig_id) {
+      projectGigMap.set(String(checkout.project_id), String(checkout.gig_id));
+    }
+  }
+
+  const gigRatingTotals = new Map<string, { total: number; count: number }>();
+  for (const review of reviewRows || []) {
+    const gigId = review.project_id ? projectGigMap.get(String(review.project_id)) : undefined;
+    if (!gigId) continue;
+    const current = gigRatingTotals.get(gigId) || { total: 0, count: 0 };
+    current.total += Number(review.rating);
+    current.count += 1;
+    gigRatingTotals.set(gigId, current);
+  }
 
   const reviewCount = reviewRows?.length || 0;
   const averageRating = reviewCount
@@ -328,6 +352,10 @@ export default async function CreatorProfilePage({ params, searchParams }: Props
                     <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                       {gigs.map((gig) => {
                         const range = packagePriceRange(gig);
+                        const gigRating = gigRatingTotals.get(String(gig.id));
+                        const gigAverageRating = gigRating && gigRating.count
+                          ? (gigRating.total / gigRating.count).toFixed(1)
+                          : null;
                         const preview = gig.packages.flatMap((pkg) => pkg.media || [])[0] || gig.media?.[0];
                         const href = `/creators/${encodeURIComponent(String(creator.username || username))}?gig=${encodeURIComponent(gig.id)}#selected-gig`;
                         return (
@@ -343,6 +371,12 @@ export default async function CreatorProfilePage({ params, searchParams }: Props
                               <Link href={href} className="block">
                                 <h3 className="line-clamp-2 min-h-[44px] text-[15px] font-black leading-5 text-slate-950 group-hover:text-blue-700">{gig.title}</h3>
                                 <p className="mt-1.5 line-clamp-1 text-xs font-semibold text-slate-500">{gig.subcategory || gig.category}</p>
+                                <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                                  <span className="text-amber-500">★</span>
+                                  {gigAverageRating
+                                    ? <>{gigAverageRating} <span className="font-medium text-slate-400">({gigRating?.count} {gigRating?.count === 1 ? "review" : "reviews"})</span></>
+                                    : <span className="font-medium text-slate-400">No reviews for this gig yet</span>}
+                                </p>
                               </Link>
                               {gig.tags.length > 0 && <div className="mt-2.5 flex flex-wrap gap-1.5">{gig.tags.slice(0, 4).map((tag) => <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{tag}</span>)}</div>}
                               <div className="mt-4 border-t border-slate-100 pt-3 text-center">

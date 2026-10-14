@@ -101,11 +101,11 @@ export default function MarketplaceNavActions({ accountType }: Props) {
     return !cutoff || new Date(item.created_at).getTime() > new Date(cutoff).getTime();
   };
 
-  const unread = useMemo(() => items.filter((item) => isLocallyUnseen(item, "all")), [items, seenAt]);
+  const unread = useMemo(() => items.filter((item) => !item.read_at), [items]);
   const requestUnread = useMemo(() => items.filter((item) =>
-    (accountType === "freelancer" ? item.type === "project_request" : item.type === "request_status") && isLocallyUnseen(item, "request")
-  ).length, [items, seenAt, accountType]);
-  const messageUnread = useMemo(() => items.filter((item) => item.type === "message" && isLocallyUnseen(item, "message")).length, [items, seenAt]);
+    !item.read_at && (accountType === "freelancer" ? item.type === "project_request" : item.type === "request_status")
+  ).length, [items, accountType]);
+  const messageUnread = useMemo(() => items.filter((item) => !item.read_at && item.type === "message").length, [items]);
 
   async function markRead(id: string) {
     setItems((current) => current.map((item) => item.id === id ? { ...item, read_at: new Date().toISOString() } : item));
@@ -136,15 +136,7 @@ export default function MarketplaceNavActions({ accountType }: Props) {
   }
 
   function openNotifications() {
-    setOpen((value) => {
-      const next = !value;
-      if (next && unread.length) {
-        const now = new Date().toISOString();
-        setSeenAt((current) => ({ ...current, all: now }));
-        try { localStorage.setItem("youtent_seen_notifications_at", now); } catch {}
-      }
-      return next;
-    });
+    setOpen((value) => !value);
   }
 
   const requestsHref = accountType === "freelancer" ? "/requests" : "/my-requests";

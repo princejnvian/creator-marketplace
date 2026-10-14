@@ -5,6 +5,8 @@ import MarketplaceHeader from "@/components/MarketplaceHeader";
 import DashboardProjectsPanel from "@/components/DashboardProjectsPanel";
 import SiteFooter from "@/components/SiteFooter";
 
+export const dynamic = "force-dynamic";
+
 type Creator = {
   id: string;
   full_name: string | null;
