@@ -146,6 +146,24 @@ export default async function DeliveryPage({ params }: Props) {
     .limit(1)
     .maybeSingle();
 
+  // Recovery for projects whose delivery was already approved but whose
+  // wallet release failed on an earlier attempt. The database RPC is
+  // idempotent and independently verifies the client, approved delivery,
+  // paid payment, and held amount before moving funds.
+  if (isClient && latestDelivery?.status === "approved" && paymentPaid) {
+    const { error: recoveryReleaseError } = await supabase.rpc(
+      "release_project_payment",
+      { p_project_id: project.id }
+    );
+    if (recoveryReleaseError) {
+      console.error("Approved-delivery wallet release recovery failed:", {
+        projectId: project.id,
+        code: recoveryReleaseError.code,
+        message: recoveryReleaseError.message,
+      });
+    }
+  }
+
   // =========================
   // GET PROJECT FILES
   // =========================

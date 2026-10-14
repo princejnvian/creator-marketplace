@@ -144,28 +144,8 @@ export default async function CreatorProfilePage({ params, searchParams }: Props
 
   const { data: reviewRows } = await supabaseAdmin
     .from("reviews")
-    .select("project_id, rating")
+    .select("rating")
     .eq("freelancer_id", creator.id);
-
-  // Finalized project titles are created as "<gig title> — <package name>".
-  // Use those titles to associate reviews with the gig that was purchased.
-  const reviewedProjectIds = [...new Set((reviewRows || []).map((row) => row.project_id).filter(Boolean))];
-  const { data: reviewedProjects } = reviewedProjectIds.length
-    ? await supabaseAdmin.from("projects").select("id, title").in("id", reviewedProjectIds)
-    : { data: [] as { id: string; title: string }[] };
-  const projectTitleById = new Map((reviewedProjects || []).map((project) => [String(project.id), String(project.title || "")]));
-  const gigRatingById = new Map<string, { average: string; count: number }>();
-  for (const gig of gigs) {
-    const normalizedGigTitle = gig.title.trim().toLocaleLowerCase();
-    const matchingRatings = (reviewRows || []).filter((review) => {
-      const projectTitle = (projectTitleById.get(String(review.project_id)) || "").trim().toLocaleLowerCase();
-      return projectTitle === normalizedGigTitle || projectTitle.startsWith(`${normalizedGigTitle} —`) || projectTitle.startsWith(`${normalizedGigTitle} -`);
-    });
-    if (matchingRatings.length) {
-      const average = matchingRatings.reduce((sum, review) => sum + Number(review.rating || 0), 0) / matchingRatings.length;
-      gigRatingById.set(String(gig.id), { average: average.toFixed(1), count: matchingRatings.length });
-    }
-  }
 
   const reviewCount = reviewRows?.length || 0;
   const averageRating = reviewCount
@@ -364,18 +344,6 @@ export default async function CreatorProfilePage({ params, searchParams }: Props
                                 <h3 className="line-clamp-2 min-h-[44px] text-[15px] font-black leading-5 text-slate-950 group-hover:text-blue-700">{gig.title}</h3>
                                 <p className="mt-1.5 line-clamp-1 text-xs font-semibold text-slate-500">{gig.subcategory || gig.category}</p>
                               </Link>
-                              {(() => {
-                                const gigRating = gigRatingById.get(String(gig.id));
-                                return gigRating ? (
-                                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-slate-800" aria-label={`${gigRating.average} out of 5 stars from ${gigRating.count} reviews`}>
-                                    <span className="text-amber-500">★</span>
-                                    <span>{gigRating.average}</span>
-                                    <span className="font-medium text-slate-500">({gigRating.count} {gigRating.count === 1 ? "review" : "reviews"})</span>
-                                  </div>
-                                ) : (
-                                  <p className="mt-2 text-[11px] font-medium text-slate-400">☆ No reviews for this gig yet</p>
-                                );
-                              })()}
                               {gig.tags.length > 0 && <div className="mt-2.5 flex flex-wrap gap-1.5">{gig.tags.slice(0, 4).map((tag) => <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{tag}</span>)}</div>}
                               <div className="mt-4 border-t border-slate-100 pt-3 text-center">
                                 <div className="flex flex-col items-center">
