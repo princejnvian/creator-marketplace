@@ -165,13 +165,27 @@ export default function MarketplaceNavActions({ accountType }: Props) {
               {unread.length > 0 && <Badge count={unread.length} />}
             </button>
 
-            {open && (
-              <div className="absolute right-0 top-12 z-[120] w-[min(390px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_-24px_rgba(15,23,42,.35)]">
+          </div>
+
+          {mounted && open && createPortal(
+              <div
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_-24px_rgba(15,23,42,.35)]"
+                style={{
+                  position: "fixed",
+                  top: "calc(64px + env(safe-area-inset-top))",
+                  right: "12px",
+                  width: "min(390px, calc(100vw - 24px))",
+                  maxHeight: "min(520px, calc(100dvh - 88px - env(safe-area-inset-top)))",
+                  zIndex: 2147483646,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
                 <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                   <div><p className="text-sm font-black text-slate-950">Notifications</p><p className="text-xs text-slate-500">{unread.length ? `${unread.length} unread` : "You're all caught up"}</p></div>
                   {unread.length > 0 && <button type="button" onClick={() => void markAllRead()} className="text-xs font-bold text-blue-600">Mark all read</button>}
                 </div>
-                <div className="max-h-[420px] overflow-y-auto">
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                   {loading ? <div className="px-4 py-8 text-center text-sm text-slate-500">Loading notifications...</div> : items.length === 0 ? (
                     <div className="px-4 py-10 text-center"><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg">🔔</div><p className="mt-3 text-sm font-bold text-slate-800">No notifications yet</p><p className="mt-1 text-xs text-slate-500">New requests, messages and updates will appear here.</p></div>
                   ) : items.map((item) => (
@@ -181,9 +195,9 @@ export default function MarketplaceNavActions({ accountType }: Props) {
                   ))}
                 </div>
                 <Link href="/notifications" onClick={() => setOpen(false)} className="block border-t border-slate-100 px-4 py-3 text-center text-xs font-black text-blue-600 hover:bg-slate-50">View all notifications →</Link>
-              </div>
+              </div>,
+              document.body
             )}
-          </div>
 
           <Link href="/profile" className="hidden rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:inline-flex">My Profile</Link>
 
