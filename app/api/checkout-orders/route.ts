@@ -5,8 +5,6 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeGigs } from "@/lib/gigs";
 import { calculatePlatformFee } from "@/lib/platform-fee";
 
-
-
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -51,6 +49,11 @@ export async function POST(request: Request) {
 
     const platformFee = calculatePlatformFee(price);
     const totalAmount = price + platformFee;
+    const amountInPaise = Math.round(totalAmount * 100);
+    if (!Number.isSafeInteger(amountInPaise) || amountInPaise < 100) {
+      return NextResponse.json({ error: "The total payment must be at least ₹1.00." }, { status: 400 });
+    }
+
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) {
@@ -88,7 +91,7 @@ export async function POST(request: Request) {
     try {
       const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
       const order = await razorpay.orders.create({
-        amount: Math.round(totalAmount * 100),
+        amount: amountInPaise,
         currency: "INR",
         receipt: `youtent_${checkout.id.replace(/-/g, "").slice(0, 24)}`,
         notes: {
@@ -96,8 +99,8 @@ export async function POST(request: Request) {
           client_id: user.id,
           freelancer_id: freelancer.id,
           gig_id: String(gig.id),
-        gig_title: String(gig.title || "Gig"),
-        package_id: String(selected.id),
+          gig_title: String(gig.title || "Gig"),
+          package_id: String(selected.id),
           project_amount: price.toFixed(2),
           platform_fee: platformFee.toFixed(2),
         },

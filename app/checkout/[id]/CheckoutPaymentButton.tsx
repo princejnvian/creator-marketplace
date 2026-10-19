@@ -29,7 +29,7 @@ export default function CheckoutPaymentButton({ checkoutId, orderId, amount, pac
         router.refresh();
         return "paid";
       }
-      if (data.paymentCaptured) { setPaymentCaptured(true); return "captured"; }
+      if (data.paymentCaptured) { setPaymentCaptured(true); setStatusMessage(data.message || "Payment captured. Project setup is being recovered."); return "captured"; }
       setStatusMessage(data.message || "Payment has not been confirmed yet.");
       if (!response.ok) setStatusError(data.error || "Could not verify payment status.");
       return "not-captured";
@@ -55,7 +55,14 @@ export default function CheckoutPaymentButton({ checkoutId, orderId, amount, pac
       const configResponse = await fetch(`/api/checkout-orders/${checkoutId}/payment-config`, { cache: "no-store" });
       const config = await configResponse.json();
       if (!configResponse.ok) throw new Error(config.error || "Unable to prepare payment.");
-      const razorpay = new window.Razorpay({ key: config.keyId, amount, currency: "INR", name: "YOUTENT", description: packageName, order_id: orderId, theme: { color: "#2563eb" },
+      const razorpay = new window.Razorpay({
+        key: config.keyId,
+        amount,
+        currency: "INR",
+        name: "YOUTENT",
+        description: packageName,
+        order_id: orderId,
+        theme: { color: "#2563eb" },
         handler: async (response: any) => {
           setLoading(true); setStatusMessage("Verifying captured payment and creating your project…");
           try {
@@ -63,13 +70,23 @@ export default function CheckoutPaymentButton({ checkoutId, orderId, amount, pac
             const result = await verifyResponse.json();
             if (verifyResponse.ok && result.projectId) { router.replace(`/projects/${result.projectId}?payment=success`); router.refresh(); return; }
             if (result.paymentCaptured) setPaymentCaptured(true);
-            // Retry server-side reconciliation a few times; never keep the page in a permanent spinner.
+            // Retry server-side reconciliation; never keep the page in a permanent spinner.
             for (let i = 0; i < 5; i++) { const recovered = await checkStatus(true); if (recovered === "paid") return; if (recovered === "captured") setPaymentCaptured(true); await new Promise(r => setTimeout(r, 1200)); }
             setStatusError(result.error || "Payment verification is still pending. Do not pay again; use Check Payment Status.");
           } catch { setStatusError("Payment response received, but verification is pending. Do not pay again; use Check Payment Status."); }
           finally { setLoading(false); setChecking(false); }
-        }, modal: { ondismiss: () => setLoading(false) }
+        },
+        modal: { ondismiss: () => setLoading(false) },
       });
+
+      // Show a useful message when Razorpay reports a failed attempt.
+      razorpay.on("payment.failed", (response: any) => {
+        const description = String(response?.error?.description || "").trim();
+        setStatusMessage("Razorpay reported that this payment attempt failed.");
+        setStatusError(description || "Payment failed. Check your payment method and try again.");
+        setLoading(false);
+      });
+
       razorpay.open();
     } catch (error) { setStatusError(error instanceof Error ? error.message : "Unable to start payment."); setLoading(false); }
   }
