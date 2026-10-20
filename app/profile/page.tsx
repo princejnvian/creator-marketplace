@@ -293,6 +293,20 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen youtent-app-bg text-slate-950">
       <MarketplaceHeader accountType={accountType} />
+      {email.trim().toLowerCase() === "princejnvian@gmail.com" && (
+        <div className="mx-auto max-w-6xl px-5 pt-5 sm:px-7 lg:px-8">
+          <Link href="/admin" className="flex items-center justify-between gap-4 rounded-2xl border border-blue-200 bg-white/95 p-4 shadow-sm transition hover:border-blue-400 hover:shadow-md">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-xl text-white" aria-hidden="true">⚙</span>
+              <span>
+                <span className="block text-sm font-black text-slate-950">YOUTENT Admin Panel</span>
+                <span className="mt-1 block text-xs text-slate-500">Manage withdrawals, users, projects, files and payments</span>
+              </span>
+            </div>
+            <span className="shrink-0 rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white">Open Admin →</span>
+          </Link>
+        </div>
+      )}
       <section className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-8">
         <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div><span className="inline-flex rounded-full border border-blue-100 bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700 shadow-sm">Profile Studio</span><h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Build a profile clients remember.</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Create your identity, choose your marketplace categories, showcase your work and publish clear service pricing.</p></div>
