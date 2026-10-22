@@ -39,6 +39,8 @@ body {
 ::selection { background: #dbeafe; color: #1e3a8a; }
 
 input, textarea, select {
+  min-width: 0;
+  max-width: 100%;
   color: #111827;
   background: #fff;
   border-color: #dbe2ea;
@@ -72,6 +74,9 @@ button { font-weight: 700; }
 /* Small-screen safety: prevent wide cards/forms from causing horizontal scroll. */
 img, video, audio, canvas, svg { max-width: 100%; }
 pre, code { overflow-wrap: anywhere; }
+/* Prevent long editable gig titles from widening mobile grids or the viewport. */
+.min-w-0 { min-width: 0 !important; }
+[overflow-wrap\:anywhere] { overflow-wrap: anywhere; }
 
 /* Generic sharp 3D interaction used across the MVP. */
 button:not(:disabled), a {
