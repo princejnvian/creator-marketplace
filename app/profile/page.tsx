@@ -47,6 +47,7 @@ export default function ProfilePage() {
   const [wallet, setWallet] = useState<{ available_balance: number; pending_balance: number } | null>(null);
   const [gigs, setGigs] = useState<CreatorGig[]>([]);
   const [selectedGigId, setSelectedGigId] = useState("");
+  const [showGigEditor, setShowGigEditor] = useState(false);
   const [packages, setPackages] = useState<ServicePackage[]>(DEFAULT_GIG_PACKAGES);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [email, setEmail] = useState("");
@@ -84,6 +85,7 @@ export default function ProfilePage() {
         setSelectedGigId(selectedGig?.id || "");
         setPackages(selectedGig?.packages?.length ? selectedGig.packages : DEFAULT_GIG_PACKAGES);
         if (editGigId && selectedGig) {
+          setShowGigEditor(true);
           setTimeout(() => document.getElementById("gig-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
         }
         setPortfolio(isFreelancerProfile && Array.isArray(profile.portfolio) ? profile.portfolio : []);
@@ -156,6 +158,7 @@ export default function ProfilePage() {
     setSelectedGigId(id);
     setPackages(target.packages);
     setTagDraft("");
+    setShowGigEditor(true);
   }
 
   function updateGig(field: "title" | "category" | "subcategory" | "description", value: string) {
@@ -238,6 +241,8 @@ export default function ProfilePage() {
     setGigs((current) => [...current, gig]);
     setSelectedGigId(id);
     setPackages(gig.packages);
+    setShowGigEditor(true);
+    setTimeout(() => document.getElementById("gig-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
   function deleteSelectedGig() {
@@ -343,7 +348,7 @@ export default function ProfilePage() {
                 <section className="premium-card p-6 sm:p-8">
                   <div className="flex items-end justify-between gap-4">
                     <div><p className="text-xs font-black uppercase tracking-widest text-emerald-600">Your gigs</p><h2 className="mt-1 text-2xl font-black">Published service tiles</h2><p className="mt-2 text-sm text-slate-500">Clients see these same tiles in the marketplace. Open a gig to preview it publicly or edit it below.</p></div>
-                    <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">{gigs.length} {gigs.length === 1 ? "gig" : "gigs"}</span>
+                    <div className="flex shrink-0 items-center gap-2"><span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">{gigs.length} {gigs.length === 1 ? "gig" : "gigs"}</span><button type="button" onClick={addGig} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white hover:bg-blue-600">＋ Add new gig</button></div>
                   </div>
                   {gigs.length ? (
                     <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -360,7 +365,7 @@ export default function ProfilePage() {
                             <div className="p-4"><h3 className="line-clamp-2 min-h-[44px] text-[15px] font-black leading-5 text-slate-950 group-hover:text-blue-700">{gig.title || "Untitled gig"}</h3><p className="mt-1 text-xs font-semibold text-slate-500">{gig.subcategory || gig.category}</p></div>
                           </Link>
                           <div className="flex items-center gap-2 border-t border-slate-100 px-4 pb-4">
-                            <button type="button" onClick={() => { selectGig(gig.id); setTimeout(() => document.getElementById("gig-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="flex-1 rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white hover:bg-blue-600">Edit Gig</button>
+                            <button type="button" onClick={() => { selectGig(gig.id); setShowGigEditor(true); setTimeout(() => document.getElementById("gig-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="flex-1 rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white hover:bg-blue-600">Edit Gig</button>
                             <Link href={`/creators/${encodeURIComponent(username || "")}?gig=${encodeURIComponent(gig.id)}#selected-gig`} target="_blank" className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-black text-slate-700 hover:border-blue-200 hover:text-blue-600">View</Link>
                           </div>
                         </article>;
@@ -369,10 +374,10 @@ export default function ProfilePage() {
                   ) : <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">No gigs yet. Add your first gig below.</div>}
                 </section>
 
-                <section id="gig-editor" className="premium-card min-w-0 max-w-full overflow-hidden p-4 sm:p-8 scroll-mt-24">
+                {showGigEditor && <section id="gig-editor" className="premium-card p-6 sm:p-8 scroll-mt-24">
                   <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                     <div><p className="text-xs font-black uppercase tracking-widest text-emerald-600">Gigs & pricing</p><h2 className="mt-1 text-2xl font-black">Create multiple gigs</h2><p className="mt-2 max-w-2xl text-sm text-slate-500">Create separate services for different skills. Each gig can have its own category, title and Basic, Standard and Premium pricing.</p></div>
-                    <button type="button" onClick={addGig} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white hover:bg-blue-600">＋ Add new gig</button>
+                    <button type="button" onClick={() => setShowGigEditor(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 hover:border-blue-300">Close editor ✕</button>
                   </div>
 
                   {gigs.length === 0 ? <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm font-semibold text-slate-500">Add your first gig to start selling a service.</div> : (
@@ -381,10 +386,10 @@ export default function ProfilePage() {
                         {gigs.map((gig) => <button key={gig.id} type="button" onClick={() => selectGig(gig.id)} className={`min-w-[190px] rounded-2xl border p-4 text-left ${selectedGigId === gig.id ? "border-blue-600 bg-blue-50 shadow-sm" : "border-slate-200 bg-white hover:border-blue-200"}`}><p className="truncate text-sm font-black text-slate-950">{gig.title || "Untitled gig"}</p><p className="mt-1 truncate text-xs font-semibold text-slate-500">{gig.category}</p></button>)}
                       </div>
 
-                      {(() => { const activeGig = gigs.find((gig) => gig.id === selectedGigId) || gigs[0]; return <div className="mt-4 min-w-0 max-w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:p-6">
-                        <div className="flex min-w-0 items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="text-xs font-black uppercase tracking-widest text-blue-600">Gig details</p><h3 className="mt-1 break-words [overflow-wrap:anywhere] text-xl font-black">{activeGig.title}</h3></div><button type="button" onClick={deleteSelectedGig} className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-black text-red-600 hover:bg-red-50">Delete gig</button></div>
+                      {(() => { const activeGig = gigs.find((gig) => gig.id === selectedGigId) || gigs[0]; return <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50/70 p-5 sm:p-6">
+                        <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-widest text-blue-600">Gig details</p><h3 className="mt-1 text-xl font-black">{activeGig.title}</h3></div><button type="button" onClick={deleteSelectedGig} className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-black text-red-600 hover:bg-red-50">Delete gig</button></div>
                         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                          <div className="min-w-0"><label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Gig title</label><input value={activeGig.title} onChange={(e) => updateGig("title", e.target.value)} placeholder="Example: Professional Instagram Reel Editing" className="block w-full min-w-0 max-w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-blue-400" /></div>
+                          <div><label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Gig title</label><input value={activeGig.title} onChange={(e) => updateGig("title", e.target.value)} placeholder="Example: Professional Instagram Reel Editing" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-blue-400" /></div>
                           <div><label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Gig category</label><select value={activeGig.category} onChange={(e) => { const category = e.target.value; updateGig("category", category); const nextSubcategory = getSubcategories(category)[0] || ""; setGigs((current) => current.map((gig) => gig.id === selectedGigId ? { ...gig, category, subcategory: nextSubcategory } : gig)); }} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-blue-400">{categories.map((category) => <option key={category}>{category}</option>)}</select></div>
                         </div>
                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -414,7 +419,7 @@ export default function ProfilePage() {
                       </div> })()}
                     </>
                   )}
-                </section>
+                </section>}
               </>}
             </div>
 
