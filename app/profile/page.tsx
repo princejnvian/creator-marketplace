@@ -47,7 +47,7 @@ export default function ProfilePage() {
   const [wallet, setWallet] = useState<{ available_balance: number; pending_balance: number } | null>(null);
   const [gigs, setGigs] = useState<CreatorGig[]>([]);
   const [selectedGigId, setSelectedGigId] = useState("");
-  const [showGigEditor, setShowGigEditor] = useState(false);
+  const [gigEditorOpen, setGigEditorOpen] = useState(false);
   const [packages, setPackages] = useState<ServicePackage[]>(DEFAULT_GIG_PACKAGES);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [email, setEmail] = useState("");
@@ -85,7 +85,7 @@ export default function ProfilePage() {
         setSelectedGigId(selectedGig?.id || "");
         setPackages(selectedGig?.packages?.length ? selectedGig.packages : DEFAULT_GIG_PACKAGES);
         if (editGigId && selectedGig) {
-          setShowGigEditor(true);
+          setGigEditorOpen(true);
           setTimeout(() => document.getElementById("gig-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
         }
         setPortfolio(isFreelancerProfile && Array.isArray(profile.portfolio) ? profile.portfolio : []);
@@ -156,9 +156,9 @@ export default function ProfilePage() {
     const target = gigs.find((gig) => gig.id === id);
     if (!target) return;
     setSelectedGigId(id);
+    setGigEditorOpen(true);
     setPackages(target.packages);
     setTagDraft("");
-    setShowGigEditor(true);
   }
 
   function updateGig(field: "title" | "category" | "subcategory" | "description", value: string) {
@@ -240,19 +240,29 @@ export default function ProfilePage() {
     const gig: CreatorGig = { id, title: "New Gig", category, subcategory: getSubcategories(category)[0] || "", tags: [], description: "Describe exactly what you deliver in this gig.", media: [], packages: DEFAULT_GIG_PACKAGES.map((item) => ({ ...item })) };
     setGigs((current) => [...current, gig]);
     setSelectedGigId(id);
+    setGigEditorOpen(true);
     setPackages(gig.packages);
-    setShowGigEditor(true);
-    setTimeout(() => document.getElementById("gig-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
-  function deleteSelectedGig() {
+  async function deleteSelectedGig() {
     if (!selectedGigId) return;
-    const remaining = gigs.filter((gig) => gig.id !== selectedGigId);
-    setGigs(remaining);
-    const next = remaining[0];
-    setSelectedGigId(next?.id || "");
-    setPackages(next?.packages || []);
-    setSuccess("Gig removed. Click Save Profile to confirm the deletion.");
+    const gigToDelete = selectedGigId;
+    if (!window.confirm("Delete this gig permanently from your database? This cannot be undone.")) return;
+    setError(""); setSuccess(""); setSaving(true);
+    try {
+      const response = await fetch(`/api/profile/gigs/${encodeURIComponent(gigToDelete)}`, { method: "DELETE" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to delete gig.");
+      const remaining = gigs.filter((gig) => gig.id !== gigToDelete);
+      setGigs(remaining);
+      const next = remaining[0];
+      setSelectedGigId(next?.id || "");
+      setPackages(next?.packages || []);
+      setGigEditorOpen(Boolean(next));
+      setSuccess("Gig permanently deleted from the database.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to delete gig.");
+    } finally { setSaving(false); }
   }
 
   async function uploadPortfolio(file: File) {
@@ -348,7 +358,7 @@ export default function ProfilePage() {
                 <section className="premium-card p-6 sm:p-8">
                   <div className="flex items-end justify-between gap-4">
                     <div><p className="text-xs font-black uppercase tracking-widest text-emerald-600">Your gigs</p><h2 className="mt-1 text-2xl font-black">Published service tiles</h2><p className="mt-2 text-sm text-slate-500">Clients see these same tiles in the marketplace. Open a gig to preview it publicly or edit it below.</p></div>
-                    <div className="flex shrink-0 items-center gap-2"><span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">{gigs.length} {gigs.length === 1 ? "gig" : "gigs"}</span><button type="button" onClick={addGig} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white hover:bg-blue-600">＋ Add new gig</button></div>
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">{gigs.length} {gigs.length === 1 ? "gig" : "gigs"}</span>
                   </div>
                   {gigs.length ? (
                     <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -365,7 +375,7 @@ export default function ProfilePage() {
                             <div className="p-4"><h3 className="line-clamp-2 min-h-[44px] text-[15px] font-black leading-5 text-slate-950 group-hover:text-blue-700">{gig.title || "Untitled gig"}</h3><p className="mt-1 text-xs font-semibold text-slate-500">{gig.subcategory || gig.category}</p></div>
                           </Link>
                           <div className="flex items-center gap-2 border-t border-slate-100 px-4 pb-4">
-                            <button type="button" onClick={() => { selectGig(gig.id); setShowGigEditor(true); setTimeout(() => document.getElementById("gig-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="flex-1 rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white hover:bg-blue-600">Edit Gig</button>
+                            <button type="button" onClick={() => { selectGig(gig.id); setGigEditorOpen(true); setTimeout(() => document.getElementById("gig-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="flex-1 rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white hover:bg-blue-600">Edit Gig</button>
                             <Link href={`/creators/${encodeURIComponent(username || "")}?gig=${encodeURIComponent(gig.id)}#selected-gig`} target="_blank" className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-black text-slate-700 hover:border-blue-200 hover:text-blue-600">View</Link>
                           </div>
                         </article>;
@@ -374,13 +384,13 @@ export default function ProfilePage() {
                   ) : <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">No gigs yet. Add your first gig below.</div>}
                 </section>
 
-                {showGigEditor && <section id="gig-editor" className="premium-card p-6 sm:p-8 scroll-mt-24">
+                <section id="gig-editor" className="premium-card p-6 sm:p-8 scroll-mt-24">
                   <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                     <div><p className="text-xs font-black uppercase tracking-widest text-emerald-600">Gigs & pricing</p><h2 className="mt-1 text-2xl font-black">Create multiple gigs</h2><p className="mt-2 max-w-2xl text-sm text-slate-500">Create separate services for different skills. Each gig can have its own category, title and Basic, Standard and Premium pricing.</p></div>
-                    <button type="button" onClick={() => setShowGigEditor(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 hover:border-blue-300">Close editor ✕</button>
+                    <button type="button" onClick={addGig} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white hover:bg-blue-600">＋ Add new gig</button>
                   </div>
 
-                  {gigs.length === 0 ? <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm font-semibold text-slate-500">Add your first gig to start selling a service.</div> : (
+                  {gigEditorOpen && (gigs.length === 0 ? <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm font-semibold text-slate-500">Add your first gig to start selling a service.</div> : (
                     <>
                       <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
                         {gigs.map((gig) => <button key={gig.id} type="button" onClick={() => selectGig(gig.id)} className={`min-w-[190px] rounded-2xl border p-4 text-left ${selectedGigId === gig.id ? "border-blue-600 bg-blue-50 shadow-sm" : "border-slate-200 bg-white hover:border-blue-200"}`}><p className="truncate text-sm font-black text-slate-950">{gig.title || "Untitled gig"}</p><p className="mt-1 truncate text-xs font-semibold text-slate-500">{gig.category}</p></button>)}
@@ -416,10 +426,14 @@ export default function ProfilePage() {
                           <label className="mt-4 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Price (INR)</label><input type="text" inputMode="numeric" pattern="[0-9]*" value={item.price} onChange={(e) => updatePackage(item.id, "price", e.target.value.replace(/\D/g, ""))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-black outline-none focus:border-blue-400" />
                           <div className="mt-3 grid grid-cols-2 gap-2"><div><label className="text-[10px] font-bold text-slate-400">Delivery days</label><input type="text" inputMode="numeric" pattern="[0-9]*" value={item.deliveryDays} onChange={(e) => updatePackage(item.id, "deliveryDays", e.target.value.replace(/\D/g, ""))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold outline-none" /></div><div><label className="text-[10px] font-bold text-slate-400">Revisions</label><input type="text" inputMode="numeric" pattern="[0-9]*" value={item.revisions} onChange={(e) => updatePackage(item.id, "revisions", e.target.value.replace(/\D/g, ""))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold outline-none" /></div></div>
                         </div>)}</div>
+                        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+                          <button type="button" onClick={() => setGigEditorOpen(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50">Close editor</button>
+                          <button type="button" disabled={saving} onClick={() => { const form = document.querySelector("form"); if (form instanceof HTMLFormElement) form.requestSubmit(); }} className="rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-7 py-3 text-sm font-black text-white shadow-md disabled:opacity-60">{saving ? "Saving..." : "Save Gig"}</button>
+                        </div>
                       </div> })()}
                     </>
-                  )}
-                </section>}
+                  ))}
+                </section>
               </>}
             </div>
 
