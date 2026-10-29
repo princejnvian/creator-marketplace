@@ -80,6 +80,9 @@ export default function SignupPage() {
       email: email.trim(),
       password,
       options: {
+        // After the user confirms their email, exchange the Supabase PKCE
+        // code in our existing callback and send the one-time welcome email.
+        emailRedirectTo: `${window.location.origin}/auth/callback?welcome=1`,
         data: {
           full_name: fullName.trim(),
           account_type: accountType,
