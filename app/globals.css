@@ -219,3 +219,28 @@ button:not(:disabled):hover, a:hover { }
     max-width: 100%;
   }
 }
+
+
+/* Keep gig editing controls inside the mobile viewport even for very long titles. */
+.youtent-gig-editor,
+.youtent-gig-editor * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+.youtent-gig-editor {
+  width: 100%;
+  max-width: 100%;
+}
+.youtent-gig-editor input,
+.youtent-gig-editor select,
+.youtent-gig-editor textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.youtent-gig-editor h3,
+.youtent-gig-editor p,
+.youtent-gig-editor label {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
