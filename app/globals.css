@@ -244,3 +244,43 @@ button:not(:disabled):hover, a:hover { }
   overflow-wrap: anywhere;
   word-break: normal;
 }
+
+
+/* Profile Studio mobile layout containment: long gig titles must never widen the page. */
+.profile-studio-form,
+.profile-studio-form > *,
+.profile-studio-form .youtent-gig-editor,
+.profile-studio-form .youtent-gig-editor > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.youtent-gig-editor h2,
+.youtent-gig-editor h3,
+.youtent-gig-editor h4,
+.youtent-gig-editor p,
+.youtent-gig-editor label {
+  overflow-wrap: anywhere;
+}
+.youtent-gig-editor input,
+.youtent-gig-editor select,
+.youtent-gig-editor textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 640px) {
+  .profile-studio-form {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+  .youtent-gig-editor {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .youtent-gig-editor .overflow-x-auto {
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+  }
+}
