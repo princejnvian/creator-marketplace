@@ -301,7 +301,7 @@ export default function ProfilePage() {
 
       const item: PortfolioItem = {
         id: crypto.randomUUID(),
-        title: file.name.replace(/\\.[^.]+$/, ""),
+        title: file.name.replace(/\.[^.]+$/, ""),
         description: "",
         url: result.url,
         mediaType: result.mediaType,
