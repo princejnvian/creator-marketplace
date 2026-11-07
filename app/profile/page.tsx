@@ -272,14 +272,46 @@ export default function ProfilePage() {
     if (portfolio.length >= 12) { setError("You can add up to 12 portfolio items."); return; }
     setUploadingPortfolio(true);
     try {
-      const form = new FormData(); form.append("file", file);
-      const response = await fetch("/api/portfolio/upload", { method: "POST", body: form });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Unable to upload portfolio file.");
-      const item: PortfolioItem = { id: crypto.randomUUID(), title: file.name.replace(/\.[^.]+$/, ""), description: "", url: result.url, mediaType: result.mediaType, category: primaryCategory || selectedCategories[0] || "Creative Work" };
-      setPortfolio((current) => [...current, item]); setSuccess("Portfolio item uploaded. Add a title and save your profile.");
-    } catch (err) { setError(err instanceof Error ? err.message : "Unable to upload portfolio file."); }
-    finally { setUploadingPortfolio(false); }
+      // Sign a direct-to-Supabase upload so large videos never pass through Vercel.
+      const signResponse = await fetch("/api/portfolio/upload/sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, size: file.size }),
+      });
+      const signResult = await signResponse.json().catch(() => ({}));
+      if (!signResponse.ok) throw new Error(signResult.error || `Could not prepare upload (HTTP ${signResponse.status}).`);
+      if (!signResult.path || !signResult.token) throw new Error("Upload permission response was incomplete. Please try again.");
+
+      const { error: storageError } = await supabase.storage
+        .from("portfolio-media")
+        .uploadToSignedUrl(signResult.path, signResult.token, file, {
+          contentType: file.type,
+          cacheControl: "31536000",
+        });
+      if (storageError) throw new Error(storageError.message || "Supabase Storage upload failed.");
+
+      const completeResponse = await fetch("/api/portfolio/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: signResult.path, fileName: file.name, contentType: file.type }),
+      });
+      const result = await completeResponse.json().catch(() => ({}));
+      if (!completeResponse.ok) throw new Error(result.error || `Upload completed, but portfolio details could not be prepared (HTTP ${completeResponse.status}).`);
+      if (!result.url) throw new Error("The file uploaded but no public URL was returned.");
+
+      const item: PortfolioItem = {
+        id: crypto.randomUUID(),
+        title: file.name.replace(/\\.[^.]+$/, ""),
+        description: "",
+        url: result.url,
+        mediaType: result.mediaType,
+        category: primaryCategory || selectedCategories[0] || "Creative Work",
+      };
+      setPortfolio((current) => [...current, item]);
+      setSuccess("Portfolio item uploaded. Add a title and save your profile.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to upload portfolio file.");
+    } finally { setUploadingPortfolio(false); }
   }
 
   function removePortfolio(id: string) { setPortfolio((current) => current.filter((item) => item.id !== id)); }
