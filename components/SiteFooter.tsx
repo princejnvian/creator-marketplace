@@ -8,8 +8,19 @@ export default function SiteFooter() {
         <div>
           <YoutentLogo href="/" />
           <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
-            YOUTENT connects clients with talented creators and freelancers through a secure project workflow.
+            YOUTENT connects clients with talented creators and freelancers through a dedicated marketplace for creative services.
           </p>
+          <p className="mt-3 text-xs font-bold text-slate-500">
+            Founded by <Link href="/about" className="text-slate-800 hover:text-blue-600">Prince JNVian</Link>
+          </p>
+          <Link
+            href="https://www.instagram.com/youtent.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-extrabold text-violet-800 transition hover:bg-violet-100"
+          >
+            <span aria-hidden="true">◎</span> Follow us on Instagram
+          </Link>
         </div>
         <FooterGroup title="Platform" links={[
           ["Browse Creators", "/creators"], ["How it works", "/about"], ["FAQ", "/faq"],
@@ -22,7 +33,7 @@ export default function SiteFooter() {
         ]} />
       </div>
       <div className="border-t border-slate-100 px-5 py-4 text-center text-xs text-slate-400">
-        © {new Date().getFullYear()} YOUTENT. All rights reserved.
+        © {new Date().getFullYear()} YOUTENT. All rights reserved. <span className="mx-1">·</span> Founded by Prince JNVian
       </div>
     </footer>
   );
